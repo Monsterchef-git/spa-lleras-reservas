@@ -14,16 +14,305 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bookings: {
+        Row: {
+          booking_date: string
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          end_time: string
+          id: string
+          notes: string | null
+          price_cop: number | null
+          price_usd: number | null
+          resource_id: string | null
+          second_therapist_id: string | null
+          service_duration_id: string | null
+          service_id: string | null
+          source: Database["public"]["Enums"]["booking_source"] | null
+          start_time: string
+          status: Database["public"]["Enums"]["booking_status"] | null
+          therapist_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          booking_date: string
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          end_time: string
+          id?: string
+          notes?: string | null
+          price_cop?: number | null
+          price_usd?: number | null
+          resource_id?: string | null
+          second_therapist_id?: string | null
+          service_duration_id?: string | null
+          service_id?: string | null
+          source?: Database["public"]["Enums"]["booking_source"] | null
+          start_time: string
+          status?: Database["public"]["Enums"]["booking_status"] | null
+          therapist_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          booking_date?: string
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          end_time?: string
+          id?: string
+          notes?: string | null
+          price_cop?: number | null
+          price_usd?: number | null
+          resource_id?: string | null
+          second_therapist_id?: string | null
+          service_duration_id?: string | null
+          service_id?: string | null
+          source?: Database["public"]["Enums"]["booking_source"] | null
+          start_time?: string
+          status?: Database["public"]["Enums"]["booking_status"] | null
+          therapist_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_resource_id_fkey"
+            columns: ["resource_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_second_therapist_id_fkey"
+            columns: ["second_therapist_id"]
+            isOneToOne: false
+            referencedRelation: "therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_service_duration_id_fkey"
+            columns: ["service_duration_id"]
+            isOneToOne: false
+            referencedRelation: "service_durations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_therapist_id_fkey"
+            columns: ["therapist_id"]
+            isOneToOne: false
+            referencedRelation: "therapists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clients: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      resources: {
+        Row: {
+          id: string
+          is_active: boolean | null
+          name: string
+          notes: string | null
+          type: string
+        }
+        Insert: {
+          id?: string
+          is_active?: boolean | null
+          name: string
+          notes?: string | null
+          type: string
+        }
+        Update: {
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          notes?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      service_durations: {
+        Row: {
+          duration_minutes: number
+          id: string
+          price_cop: number
+          price_usd: number
+          service_id: string
+        }
+        Insert: {
+          duration_minutes: number
+          id?: string
+          price_cop: number
+          price_usd: number
+          service_id: string
+        }
+        Update: {
+          duration_minutes?: number
+          id?: string
+          price_cop?: number
+          price_usd?: number
+          service_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_durations_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      services: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          is_addon: boolean | null
+          name: string
+          notes: string | null
+          requires_two_therapists: boolean | null
+          updated_at: string | null
+          uses_rooftop: boolean | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_addon?: boolean | null
+          name: string
+          notes?: string | null
+          requires_two_therapists?: boolean | null
+          updated_at?: string | null
+          uses_rooftop?: boolean | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_addon?: boolean | null
+          name?: string
+          notes?: string | null
+          requires_two_therapists?: boolean | null
+          updated_at?: string | null
+          uses_rooftop?: boolean | null
+        }
+        Relationships: []
+      }
+      therapists: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_available: boolean | null
+          name: string
+          schedule: string | null
+          specialties: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_available?: boolean | null
+          name: string
+          schedule?: string | null
+          specialties?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_available?: boolean | null
+          name?: string
+          schedule?: string | null
+          specialties?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "staff"
+      booking_source: "fresha" | "whatsapp" | "email" | "walk_in" | "web"
+      booking_status: "pendiente" | "confirmada" | "cancelada" | "completada"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +439,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "staff"],
+      booking_source: ["fresha", "whatsapp", "email", "walk_in", "web"],
+      booking_status: ["pendiente", "confirmada", "cancelada", "completada"],
+    },
   },
 } as const
