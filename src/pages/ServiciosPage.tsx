@@ -302,9 +302,24 @@ export default function ServiciosPage() {
                   <CardContent className="p-5">
                     <div className="flex items-start justify-between mb-2">
                       <h3 className="font-heading font-semibold text-lg leading-tight pr-2">{s.name}</h3>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                        <Edit className="h-3.5 w-3.5" />
-                      </Button>
+                      <ServiceFormDialog
+                        service={{
+                          name: s.name,
+                          category: cat.id,
+                          description: s.description,
+                          is_addon: false,
+                          requires_two_therapists: false,
+                          uses_rooftop: false,
+                          notes: s.note ?? "",
+                          rates: [],
+                        }}
+                        trigger={
+                          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                            <Edit className="h-3.5 w-3.5" />
+                          </Button>
+                        }
+                        onSave={handleEditService}
+                      />
                     </div>
 
                     <p className="text-sm text-muted-foreground leading-relaxed mb-4">{s.description}</p>
