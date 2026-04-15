@@ -73,11 +73,51 @@ const DEFAULT_CONFIG: SpaConfig = {
 };
 
 const INTEGRATION_META = [
-  { key: "gcal", name: "Google Calendar", description: "Sincronización bidireccional de reservas con Google Calendar.", icon: Calendar, fields: [{ key: "calendarId", label: "Calendar ID" }, { key: "apiKey", label: "API Key" }] },
-  { key: "whatsapp", name: "WhatsApp Business API", description: "Webhook vía Make.com para parsear mensajes y crear reservas.", icon: MessageSquare, fields: [{ key: "webhookUrl", label: "Webhook URL" }, { key: "phoneNumber", label: "Número de teléfono" }, { key: "apiToken", label: "API Token" }] },
-  { key: "email", name: "Email / Gmail API", description: "Integración con Gmail para reservas por correo electrónico.", icon: Mail, fields: [{ key: "smtpHost", label: "SMTP Host" }, { key: "smtpPort", label: "SMTP Port" }, { key: "smtpUser", label: "Usuario" }, { key: "smtpPass", label: "Contraseña" }] },
-  { key: "csv", name: "Importar CSV/Excel", description: "Importar reservas antiguas desde archivos CSV o Excel.", icon: Upload, fields: [] },
-  { key: "notifications", name: "Notificaciones Automáticas", description: "Recordatorios automáticos vía email y WhatsApp.", icon: Bell, fields: [{ key: "emailEnabled", label: "Email habilitado (true/false)" }, { key: "whatsappEnabled", label: "WhatsApp habilitado (true/false)" }] },
+  {
+    key: "gcal", name: "Google Calendar", icon: Calendar,
+    description: "Sincronización bidireccional de reservas con Google Calendar.",
+    modalDescription: "Conecta tu cuenta de Google Calendar para sincronizar reservas automáticamente. Necesitas crear un proyecto en Google Cloud Console y habilitar la Calendar API.",
+    fields: [
+      { key: "calendarId", label: "Calendar ID", placeholder: "ejemplo@group.calendar.google.com", hint: "ID del calendario donde se crearán los eventos", type: "text" },
+      { key: "apiKey", label: "API Key", placeholder: "AIzaSy...", hint: "Clave de API de Google Cloud Console", type: "password" },
+    ],
+  },
+  {
+    key: "whatsapp", name: "WhatsApp Business API", icon: MessageSquare,
+    description: "Webhook vía Make.com para parsear mensajes y crear reservas.",
+    modalDescription: "Configura la integración con WhatsApp Business API para recibir y responder mensajes de reservas automáticamente a través de Make.com o n8n.",
+    fields: [
+      { key: "webhookUrl", label: "Webhook URL", placeholder: "https://hook.make.com/abc123...", hint: "URL del webhook de Make.com o n8n que recibe los mensajes", type: "url" },
+      { key: "phoneNumber", label: "Número de teléfono", placeholder: "+57 300 123 4567", hint: "Número de WhatsApp Business registrado", type: "tel" },
+      { key: "apiToken", label: "API Token", placeholder: "whsec_...", hint: "Token de autenticación de la API de WhatsApp", type: "password" },
+    ],
+  },
+  {
+    key: "email", name: "Email / Gmail API", icon: Mail,
+    description: "Integración con Gmail para reservas por correo electrónico.",
+    modalDescription: "Configura el servidor SMTP para enviar confirmaciones, recordatorios y notificaciones de reservas por correo electrónico.",
+    fields: [
+      { key: "smtpHost", label: "SMTP Host", placeholder: "smtp.gmail.com", hint: "Servidor de correo saliente", type: "text" },
+      { key: "smtpPort", label: "SMTP Port", placeholder: "587", hint: "Puerto del servidor (587 para TLS, 465 para SSL)", type: "text" },
+      { key: "smtpUser", label: "Usuario / Email", placeholder: "reservas@spalleras.com", hint: "Dirección de email para enviar correos", type: "email" },
+      { key: "smtpPass", label: "Contraseña de aplicación", placeholder: "••••••••", hint: "Contraseña de app de Gmail o del servidor SMTP", type: "password" },
+    ],
+  },
+  {
+    key: "csv", name: "Importar CSV/Excel", icon: Upload,
+    description: "Importar reservas antiguas desde archivos CSV o Excel.",
+    modalDescription: "Sube un archivo CSV o Excel para importar reservas históricas al sistema.",
+    fields: [],
+  },
+  {
+    key: "notifications", name: "Notificaciones Automáticas", icon: Bell,
+    description: "Recordatorios automáticos vía email y WhatsApp.",
+    modalDescription: "Configura los canales de notificación para enviar recordatorios automáticos a los clientes antes de su cita.",
+    fields: [
+      { key: "emailEnabled", label: "Notificaciones por Email", placeholder: "", hint: "Enviar recordatorios por correo electrónico", type: "toggle" },
+      { key: "whatsappEnabled", label: "Notificaciones por WhatsApp", placeholder: "", hint: "Enviar recordatorios por WhatsApp", type: "toggle" },
+    ],
+  },
 ];
 
 function loadConfig(): SpaConfig {
