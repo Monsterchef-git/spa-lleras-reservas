@@ -3,6 +3,8 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/hooks/useAuth";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import DashboardPage from "./pages/DashboardPage";
 import ReservasPage from "./pages/ReservasPage";
 import ServiciosPage from "./pages/ServiciosPage";
@@ -21,17 +23,19 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/reservas" element={<ReservasPage />} />
-          <Route path="/servicios" element={<ServiciosPage />} />
-          <Route path="/terapeutas" element={<TerapeutasPage />} />
-          <Route path="/clientes" element={<ClientesPage />} />
-          <Route path="/reportes" element={<ReportesPage />} />
-          <Route path="/configuracion" element={<ConfiguracionPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+            <Route path="/reservas" element={<ProtectedRoute><ReservasPage /></ProtectedRoute>} />
+            <Route path="/servicios" element={<ProtectedRoute><ServiciosPage /></ProtectedRoute>} />
+            <Route path="/terapeutas" element={<ProtectedRoute><TerapeutasPage /></ProtectedRoute>} />
+            <Route path="/clientes" element={<ProtectedRoute><ClientesPage /></ProtectedRoute>} />
+            <Route path="/reportes" element={<ProtectedRoute><ReportesPage /></ProtectedRoute>} />
+            <Route path="/configuracion" element={<ProtectedRoute><ConfiguracionPage /></ProtectedRoute>} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
