@@ -5,7 +5,8 @@ import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 export type Booking = Tables<"bookings"> & {
   clients: { name: string; phone: string | null } | null;
   services: { name: string } | null;
-  therapists: { name: string } | null;
+  therapist: { name: string } | null;
+  second_therapist: { name: string } | null;
   resources: { name: string } | null;
   booking_items: (Tables<"booking_items"> & {
     services: { name: string } | null;
@@ -23,7 +24,8 @@ export function useBookings() {
           *,
           clients(name, phone),
           services(name),
-          therapists(name),
+          therapist:therapists!bookings_therapist_id_fkey(name),
+          second_therapist:therapists!bookings_second_therapist_id_fkey(name),
           resources(name),
           booking_items(*, services(name), service_durations(duration_minutes, price_cop, price_usd))
         `)
