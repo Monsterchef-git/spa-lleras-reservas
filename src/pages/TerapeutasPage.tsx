@@ -4,8 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Calendar, Trash2, Loader2 } from "lucide-react";
 import TherapistFormDialog from "@/components/TherapistFormDialog";
+import ResourceFormDialog, { type ResourceFormData } from "@/components/ResourceFormDialog";
 import { useTherapists, useCreateTherapist, useUpdateTherapist, useDeleteTherapist } from "@/hooks/useTherapists";
-import { useResources } from "@/hooks/useResources";
+import { useResources, useCreateResource, useUpdateResource, useDeleteResource } from "@/hooks/useResources";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
