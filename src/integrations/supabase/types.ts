@@ -22,7 +22,9 @@ export type Database = {
           created_by: string | null
           end_time: string
           id: string
+          nationality: string | null
           notes: string | null
+          preferred_language: string | null
           price_cop: number | null
           price_usd: number | null
           resource_id: string | null
@@ -42,7 +44,9 @@ export type Database = {
           created_by?: string | null
           end_time: string
           id?: string
+          nationality?: string | null
           notes?: string | null
+          preferred_language?: string | null
           price_cop?: number | null
           price_usd?: number | null
           resource_id?: string | null
@@ -62,7 +66,9 @@ export type Database = {
           created_by?: string | null
           end_time?: string
           id?: string
+          nationality?: string | null
           notes?: string | null
+          preferred_language?: string | null
           price_cop?: number | null
           price_usd?: number | null
           resource_id?: string | null
