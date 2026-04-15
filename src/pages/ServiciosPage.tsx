@@ -3,7 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Plus, Edit, Sparkles, Clock, DollarSign } from "lucide-react";
-import React from "react";
+import React, { useState } from "react";
+import ServiceFormDialog, { type ServiceFormData } from "@/components/ServiceFormDialog";
 
 interface ServiceData {
   name: string;
