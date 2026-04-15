@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Calendar, Trash2, Loader2 } from "lucide-react";
 import TherapistFormDialog from "@/components/TherapistFormDialog";
+import ResourceFormDialog, { type ResourceFormData } from "@/components/ResourceFormDialog";
 import { useTherapists, useCreateTherapist, useUpdateTherapist, useDeleteTherapist } from "@/hooks/useTherapists";
-import { useResources } from "@/hooks/useResources";
+import { useResources, useCreateResource, useUpdateResource, useDeleteResource } from "@/hooks/useResources";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -18,41 +19,56 @@ export default function TerapeutasPage() {
   const createTherapist = useCreateTherapist();
   const updateTherapist = useUpdateTherapist();
   const deleteTherapist = useDeleteTherapist();
+  const createResource = useCreateResource();
+  const updateResource = useUpdateResource();
+  const deleteResource = useDeleteResource();
   const { toast } = useToast();
 
-  const handleAdd = async (data: { name: string; schedule: string; specialties: string[]; available: boolean }) => {
+  const handleAddTherapist = async (data: { name: string; schedule: string; specialties: string[]; available: boolean }) => {
     try {
-      await createTherapist.mutateAsync({
-        name: data.name,
-        schedule: data.schedule || null,
-        specialties: data.specialties,
-        is_available: data.available,
-      });
+      await createTherapist.mutateAsync({ name: data.name, schedule: data.schedule || null, specialties: data.specialties, is_available: data.available });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
   };
 
-  const handleEdit = async (id: string, data: { name: string; schedule: string; specialties: string[]; available: boolean }) => {
+  const handleEditTherapist = async (id: string, data: { name: string; schedule: string; specialties: string[]; available: boolean }) => {
     try {
-      await updateTherapist.mutateAsync({
-        id,
-        data: {
-          name: data.name,
-          schedule: data.schedule || null,
-          specialties: data.specialties,
-          is_available: data.available,
-        },
-      });
+      await updateTherapist.mutateAsync({ id, data: { name: data.name, schedule: data.schedule || null, specialties: data.specialties, is_available: data.available } });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteTherapist = async (id: string) => {
     try {
       await deleteTherapist.mutateAsync(id);
       toast({ title: "Terapeuta eliminado" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleAddResource = async (data: ResourceFormData) => {
+    try {
+      await createResource.mutateAsync({ name: data.name, type: data.type, notes: data.notes || null, is_active: data.is_active });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleEditResource = async (id: string, data: ResourceFormData) => {
+    try {
+      await updateResource.mutateAsync({ id, data: { name: data.name, type: data.type, notes: data.notes || null, is_active: data.is_active } });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleDeleteResource = async (id: string) => {
+    try {
+      await deleteResource.mutateAsync(id);
+      toast({ title: "Recurso eliminado" });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
@@ -79,12 +95,8 @@ export default function TerapeutasPage() {
               <p className="text-muted-foreground text-sm mt-1">{therapists?.length ?? 0} terapeutas registrados</p>
             </div>
             <TherapistFormDialog
-              trigger={
-                <Button variant="spa" className="gap-2">
-                  <Plus className="h-4 w-4" /> Agregar Terapeuta
-                </Button>
-              }
-              onSave={handleAdd}
+              trigger={<Button variant="spa" className="gap-2"><Plus className="h-4 w-4" /> Agregar Terapeuta</Button>}
+              onSave={handleAddTherapist}
             />
           </div>
 
@@ -101,38 +113,23 @@ export default function TerapeutasPage() {
                         <h3 className="font-medium">{t.name}</h3>
                         {t.schedule && (
                           <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-                            <Calendar className="h-3 w-3" />
-                            {t.schedule}
+                            <Calendar className="h-3 w-3" />{t.schedule}
                           </div>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Badge
-                        variant={t.is_available ? "default" : "secondary"}
-                        className={t.is_available ? "bg-green-100 text-green-800 border-green-200" : ""}
-                      >
+                      <Badge variant={t.is_available ? "default" : "secondary"} className={t.is_available ? "bg-green-100 text-green-800 border-green-200" : ""}>
                         {t.is_available ? "Activa" : "Inactiva"}
                       </Badge>
                       <TherapistFormDialog
-                        therapist={{
-                          name: t.name,
-                          schedule: t.schedule ?? "",
-                          specialties: t.specialties ?? [],
-                          available: t.is_available ?? true,
-                        }}
-                        trigger={
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Edit className="h-3.5 w-3.5" />
-                          </Button>
-                        }
-                        onSave={(data) => handleEdit(t.id, data)}
+                        therapist={{ name: t.name, schedule: t.schedule ?? "", specialties: t.specialties ?? [], available: t.is_available ?? true }}
+                        trigger={<Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-3.5 w-3.5" /></Button>}
+                        onSave={(data) => handleEditTherapist(t.id, data)}
                       />
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
@@ -141,9 +138,7 @@ export default function TerapeutasPage() {
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(t.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                              Eliminar
-                            </AlertDialogAction>
+                            <AlertDialogAction onClick={() => handleDeleteTherapist(t.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Eliminar</AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
@@ -151,25 +146,26 @@ export default function TerapeutasPage() {
                   </div>
                   {t.specialties && t.specialties.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mt-3">
-                      {t.specialties.map((s) => (
-                        <Badge key={s} variant="outline" className="text-xs">{s}</Badge>
-                      ))}
+                      {t.specialties.map((s) => <Badge key={s} variant="outline" className="text-xs">{s}</Badge>)}
                     </div>
                   )}
                 </CardContent>
               </Card>
             ))}
           </div>
-
-          {therapists?.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground">No hay terapeutas registrados.</div>
-          )}
+          {therapists?.length === 0 && <div className="text-center py-12 text-muted-foreground">No hay terapeutas registrados.</div>}
         </div>
 
         {/* Resources */}
         <div>
-          <h2 className="font-heading text-xl font-bold mb-4">Recursos</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <h2 className="font-heading text-xl font-bold">Recursos</h2>
+            <ResourceFormDialog
+              trigger={<Button variant="gold" className="gap-2"><Plus className="h-4 w-4" /> Agregar Recurso</Button>}
+              onSave={handleAddResource}
+            />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {resources?.map((r) => (
               <Card key={r.id} className="border-border/50 shadow-sm">
                 <CardContent className="p-5">
@@ -179,14 +175,37 @@ export default function TerapeutasPage() {
                       <p className="text-xs text-muted-foreground mt-0.5">{r.type}</p>
                       {r.notes && <p className="text-xs text-muted-foreground italic mt-1">{r.notes}</p>}
                     </div>
-                    <Badge variant="outline" className={r.is_active ? "status-badge-confirmed" : "status-badge-pending"}>
-                      {r.is_active ? "Disponible" : "Inactivo"}
-                    </Badge>
+                    <div className="flex items-center gap-1">
+                      <Badge variant="outline" className={r.is_active ? "status-badge-confirmed" : "status-badge-cancelled"}>
+                        {r.is_active ? "Disponible" : "Inactivo"}
+                      </Badge>
+                      <ResourceFormDialog
+                        resource={{ name: r.name, type: r.type, notes: r.notes ?? "", is_active: r.is_active ?? true }}
+                        trigger={<Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-3.5 w-3.5" /></Button>}
+                        onSave={(data) => handleEditResource(r.id, data)}
+                      />
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>¿Eliminar recurso?</AlertDialogTitle>
+                            <AlertDialogDescription>Se eliminará "{r.name}" permanentemente.</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeleteResource(r.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Eliminar</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
+          {resources?.length === 0 && <div className="text-center py-12 text-muted-foreground">No hay recursos registrados.</div>}
         </div>
       </div>
     </AppLayout>
