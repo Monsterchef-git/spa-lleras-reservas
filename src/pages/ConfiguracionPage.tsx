@@ -392,25 +392,57 @@ export default function ConfiguracionPage() {
 
       {/* Integration Config Modal */}
       <Dialog open={!!integrationModal} onOpenChange={(o) => !o && setIntegrationModal(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className="font-heading">Configurar {meta?.name}</DialogTitle>
+            <div className="flex items-center gap-3">
+              {meta && <div className="p-2.5 rounded-lg bg-primary/10"><meta.icon className="h-5 w-5 text-primary" /></div>}
+              <div>
+                <DialogTitle className="font-heading text-lg">Configurar {meta?.name}</DialogTitle>
+                <p className="text-xs text-muted-foreground mt-1">{meta?.modalDescription}</p>
+              </div>
+            </div>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <Separator />
+          <div className="space-y-5 py-1">
             {meta?.fields.map((f) => (
               <div key={f.key} className="space-y-1.5">
-                <Label>{f.label}</Label>
-                <Input
-                  value={modalFields[f.key] || ""}
-                  onChange={(e) => setModalFields((prev) => ({ ...prev, [f.key]: e.target.value }))}
-                  placeholder={f.label}
-                />
+                <Label className="text-sm font-medium">{f.label}</Label>
+                {f.type === "toggle" ? (
+                  <div className="flex items-center justify-between rounded-lg border border-border/50 p-3">
+                    <p className="text-xs text-muted-foreground">{f.hint}</p>
+                    <Switch
+                      checked={modalFields[f.key] === "true"}
+                      onCheckedChange={(v) => setModalFields((prev) => ({ ...prev, [f.key]: String(v) }))}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <Input
+                      type={f.type || "text"}
+                      value={modalFields[f.key] || ""}
+                      onChange={(e) => setModalFields((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                      placeholder={f.placeholder}
+                      className="font-mono text-sm"
+                    />
+                    {f.hint && <p className="text-[11px] text-muted-foreground">{f.hint}</p>}
+                  </>
+                )}
               </div>
             ))}
+            {meta?.fields.length === 0 && (
+              <div className="text-center py-6 text-muted-foreground">
+                <Upload className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Arrastra un archivo CSV o Excel aquí, o haz clic para seleccionar</p>
+                <Button variant="outline" size="sm" className="mt-3">Seleccionar archivo</Button>
+              </div>
+            )}
           </div>
+          <Separator />
           <DialogFooter>
             <Button variant="outline" onClick={() => setIntegrationModal(null)}>Cancelar</Button>
-            <Button onClick={saveIntegrationModal} className="bg-primary hover:bg-primary/90">Guardar</Button>
+            <Button onClick={saveIntegrationModal} className="bg-primary hover:bg-primary/90">
+              <Save className="h-4 w-4 mr-1" /> Guardar configuración
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
