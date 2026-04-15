@@ -27,6 +27,10 @@ function formatCOP(amount: number) {
   return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(amount);
 }
 
+function formatUSD(amount: number) {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
+}
+
 export default function ReservasPage() {
   const [search, setSearch] = useState("");
   const filtered = mockBookings.filter(

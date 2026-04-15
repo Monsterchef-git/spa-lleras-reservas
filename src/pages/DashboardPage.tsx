@@ -7,7 +7,7 @@ const stats = [
   { label: "Reservas Hoy", value: "8", icon: CalendarDays, change: "+2 vs ayer" },
   { label: "Próxima Cita", value: "10:30 AM", icon: Clock, change: "Masaje Relajante" },
   { label: "Terapeutas Activos", value: "3", icon: Users, change: "de 4 total" },
-  { label: "Ingresos Hoy", value: "$1.2M", icon: TrendingUp, change: "COP" },
+  { label: "Ingresos Hoy", value: "$1.2M COP", icon: TrendingUp, change: "≈ $350 USD" },
 ];
 
 const todayBookings = [
