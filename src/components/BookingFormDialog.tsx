@@ -9,148 +9,18 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Globe, Languages, DollarSign, Trash2, ShoppingCart, Sparkles, Clock, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-interface Rate {
-  label: string;
-  minutes: number | null;
-  priceCOP: number | null;
-  priceUSD: number | null;
-}
-
-interface ServiceOption {
-  id: string;
-  name: string;
-  rates: Rate[];
-  priceOnRequest?: boolean;
-  isAddon?: boolean;
-  requiresTwoTherapists?: boolean;
-}
+import { useServices, type ServiceWithDurations } from "@/hooks/useServices";
+import { useTherapists } from "@/hooks/useTherapists";
+import { useResources } from "@/hooks/useResources";
+import { useClients } from "@/hooks/useClients";
+import { useCreateBooking } from "@/hooks/useBookings";
 
 interface CartItem {
   uid: string;
   serviceId: string;
-  rateIdx: number;
+  durationId: string;
   quantity: number;
 }
-
-const serviceOptions: ServiceOption[] = [
-  {
-    id: "relajante", name: "Masaje Relajante",
-    rates: [
-      { label: "40 minutos", minutes: 40, priceCOP: 160000, priceUSD: 50 },
-      { label: "60 minutos", minutes: 60, priceCOP: 185000, priceUSD: 55 },
-      { label: "90 minutos", minutes: 90, priceCOP: 235000, priceUSD: 70 },
-    ],
-  },
-  {
-    id: "profundo", name: "Masaje de Tejido Profundo",
-    rates: [
-      { label: "40 minutos", minutes: 40, priceCOP: 185000, priceUSD: 55 },
-      { label: "60 minutos", minutes: 60, priceCOP: 210000, priceUSD: 65 },
-      { label: "90 minutos", minutes: 90, priceCOP: 260000, priceUSD: 75 },
-    ],
-  },
-  {
-    id: "cuatro-manos", name: "Masaje a Cuatro Manos", requiresTwoTherapists: true,
-    rates: [
-      { label: "60 minutos", minutes: 60, priceCOP: 370000, priceUSD: 110 },
-      { label: "90 minutos", minutes: 90, priceCOP: 470000, priceUSD: 140 },
-    ],
-  },
-  {
-    id: "facial-limpieza", name: "Facial de Limpieza Profunda",
-    rates: [
-      { label: "Con masaje o IV — 60 min", minutes: 60, priceCOP: 185000, priceUSD: 55 },
-      { label: "Sin masaje o IV — 60 min", minutes: 60, priceCOP: 210000, priceUSD: 65 },
-    ],
-  },
-  {
-    id: "facial-led", name: "Facial Limpieza + Hidratación + LED",
-    rates: [
-      { label: "Con masaje o IV — 70 min", minutes: 70, priceCOP: 235000, priceUSD: 70 },
-      { label: "Sin masaje o IV — 70 min", minutes: 70, priceCOP: 260000, priceUSD: 75 },
-    ],
-  },
-  {
-    id: "facial-ultimate", name: "Facial Ultimate",
-    rates: [
-      { label: "Con masaje o IV — 80 min", minutes: 80, priceCOP: 285000, priceUSD: 85 },
-      { label: "Sin masaje o IV — 80 min", minutes: 80, priceCOP: 310000, priceUSD: 90 },
-    ],
-  },
-  {
-    id: "hidroterapia", name: "Acceso a Hidroterapia en Terraza",
-    rates: [{ label: "90 minutos", minutes: 90, priceCOP: 110000, priceUSD: 35 }],
-  },
-  {
-    id: "exfoliacion", name: "Exfoliación Corporal Suave", isAddon: true,
-    rates: [{ label: "15 minutos", minutes: 15, priceCOP: 85000, priceUSD: 25 }],
-  },
-  {
-    id: "chocolate", name: "Terapia Corporal de Chocolate", isAddon: true,
-    rates: [{ label: "15 minutos", minutes: 15, priceCOP: 120000, priceUSD: 35 }],
-  },
-  {
-    id: "espumoso", name: "Vino Espumoso", isAddon: true,
-    rates: [{ label: "Botella", minutes: null, priceCOP: 150000, priceUSD: 45 }],
-  },
-  {
-    id: "percusion", name: "Terapia de Percusión (Pistola de Masaje)", isAddon: true,
-    rates: [{ label: "15 minutos", minutes: 15, priceCOP: 60000, priceUSD: 20 }],
-  },
-  {
-    id: "ventosas", name: "Terapia con Ventosas", isAddon: true,
-    rates: [{ label: "15 minutos", minutes: 15, priceCOP: 60000, priceUSD: 20 }],
-  },
-  {
-    id: "piedras", name: "Piedras Volcánicas Calientes", isAddon: true,
-    rates: [{ label: "15 minutos", minutes: 15, priceCOP: 60000, priceUSD: 20 }],
-  },
-  {
-    id: "aromaterapia", name: "Aromaterapia", isAddon: true,
-    rates: [], priceOnRequest: true,
-  },
-  {
-    id: "zona-espalda", name: "Masaje Exprés — Espalda, cuello y hombros",
-    rates: [{ label: "30 minutos", minutes: 30, priceCOP: 150000, priceUSD: 40 }],
-  },
-  {
-    id: "zona-piernas", name: "Masaje Exprés — Piernas y pies",
-    rates: [{ label: "30 minutos", minutes: 30, priceCOP: 150000, priceUSD: 40 }],
-  },
-  {
-    id: "zona-brazos", name: "Masaje Exprés — Manos y brazos",
-    rates: [{ label: "30 minutos", minutes: 30, priceCOP: 150000, priceUSD: 40 }],
-  },
-  {
-    id: "paquete-terraza-1", name: "Paquete Día de Spa + Terraza (1 persona)",
-    rates: [{ label: "2h 30min", minutes: 150, priceCOP: 385000, priceUSD: 110 }],
-  },
-  {
-    id: "paquete-terraza-2", name: "Paquete Día de Spa + Terraza (2 personas)",
-    rates: [{ label: "2h 30min", minutes: 150, priceCOP: 720000, priceUSD: 205 }],
-  },
-  {
-    id: "paquete-jacuzzi-1", name: "Paquete Día de Spa + Jacuzzi Privado (1 persona)",
-    rates: [{ label: "2 horas", minutes: 120, priceCOP: 335000, priceUSD: 95 }],
-  },
-  {
-    id: "paquete-jacuzzi-2", name: "Paquete Día de Spa + Jacuzzi Privado (2 personas)",
-    rates: [{ label: "2 horas", minutes: 120, priceCOP: 620000, priceUSD: 180 }],
-  },
-];
-
-const rooms = [
-  { value: "agua", label: "Agua (doble, jacuzzi)" },
-  { value: "aire", label: "Aire" },
-  { value: "tierra", label: "Tierra" },
-  { value: "fuego", label: "Fuego (doble)" },
-  { value: "yin-yang", label: "Yin and Yang (doble)" },
-  { value: "africa", label: "Africa (doble)" },
-  { value: "consultorio1", label: "Consultorio 1" },
-  { value: "consultorio2", label: "Consultorio 2" },
-  { value: "rooftop", label: "Rooftop" },
-];
 
 const sources = [
   { value: "whatsapp", label: "WhatsApp" },
@@ -159,16 +29,6 @@ const sources = [
   { value: "walk_in", label: "Walk-in" },
   { value: "web", label: "Web" },
 ];
-
-// Add-on suggestions based on main services
-const addonSuggestions: Record<string, string[]> = {
-  relajante: ["aromaterapia", "exfoliacion", "piedras", "espumoso"],
-  profundo: ["percusion", "ventosas", "piedras", "espumoso"],
-  "cuatro-manos": ["aromaterapia", "chocolate", "espumoso"],
-  "facial-limpieza": ["exfoliacion", "aromaterapia", "espumoso"],
-  "facial-led": ["exfoliacion", "aromaterapia", "espumoso"],
-  "facial-ultimate": ["chocolate", "aromaterapia", "espumoso"],
-};
 
 function formatCOP(n: number) {
   return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(n);
@@ -181,11 +41,30 @@ function nextUid() {
 
 export default function BookingFormDialog() {
   const [open, setOpen] = useState(false);
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const { toast } = useToast();
+  const { data: services } = useServices();
+  const { data: therapists } = useTherapists();
+  const { data: resources } = useResources();
+  const { data: clients } = useClients();
+  const createBooking = useCreateBooking();
+
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [clientId, setClientId] = useState("");
+  const [nationality, setNationality] = useState("");
+  const [language, setLanguage] = useState("en");
+  const [date, setDate] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [therapistId, setTherapistId] = useState("");
+  const [secondTherapistId, setSecondTherapistId] = useState("");
+  const [resourceId, setResourceId] = useState("");
+  const [source, setSource] = useState("web");
+  const [notes, setNotes] = useState("");
+
+  const activeServices = useMemo(() => (services ?? []).filter((s) => s.is_active), [services]);
+  const activeTherapists = useMemo(() => (therapists ?? []).filter((t) => t.is_available), [therapists]);
 
   const addCartItem = useCallback(() => {
-    setCartItems((prev) => [...prev, { uid: nextUid(), serviceId: "", rateIdx: -1, quantity: 1 }]);
+    setCartItems((prev) => [...prev, { uid: nextUid(), serviceId: "", durationId: "", quantity: 1 }]);
   }, []);
 
   const updateCartItem = useCallback((uid: string, patch: Partial<CartItem>) => {
@@ -196,65 +75,60 @@ export default function BookingFormDialog() {
     setCartItems((prev) => prev.filter((item) => item.uid !== uid));
   }, []);
 
-  const addSuggestedAddon = useCallback((serviceId: string) => {
-    const svc = serviceOptions.find((s) => s.id === serviceId);
-    if (!svc || svc.rates.length === 0) return;
-    setCartItems((prev) => [...prev, { uid: nextUid(), serviceId, rateIdx: 0, quantity: 1 }]);
-  }, []);
+  const getDuration = (serviceId: string, durationId: string) => {
+    const svc = activeServices.find((s) => s.id === serviceId);
+    return svc?.service_durations.find((d) => d.id === durationId);
+  };
 
-  // Derived totals
   const { totalMinutes, totalCOP, totalUSD, requiresTwoTherapists } = useMemo(() => {
     let mins = 0, cop = 0, usd = 0, needsTwo = false;
     for (const item of cartItems) {
-      const svc = serviceOptions.find((s) => s.id === item.serviceId);
-      if (!svc || item.rateIdx < 0 || item.rateIdx >= svc.rates.length) continue;
-      const rate = svc.rates[item.rateIdx];
-      if (rate.minutes) mins += rate.minutes * item.quantity;
-      if (rate.priceCOP) cop += rate.priceCOP * item.quantity;
-      if (rate.priceUSD) usd += rate.priceUSD * item.quantity;
-      if (svc.requiresTwoTherapists) needsTwo = true;
+      const dur = getDuration(item.serviceId, item.durationId);
+      if (dur) {
+        mins += dur.duration_minutes * item.quantity;
+        cop += dur.price_cop * item.quantity;
+        usd += dur.price_usd * item.quantity;
+      }
+      const svc = activeServices.find((s) => s.id === item.serviceId);
+      if (svc?.requires_two_therapists) needsTwo = true;
     }
     return { totalMinutes: mins, totalCOP: cop, totalUSD: usd, requiresTwoTherapists: needsTwo };
-  }, [cartItems]);
+  }, [cartItems, activeServices]);
 
-  // Suggested add-ons based on cart
+  // Addon suggestions
   const suggestedAddons = useMemo(() => {
-    const mainServiceIds = cartItems.map((i) => i.serviceId).filter(Boolean);
-    const cartServiceIds = new Set(mainServiceIds);
-    const suggestions = new Set<string>();
-    for (const sid of mainServiceIds) {
-      const addons = addonSuggestions[sid] || [];
-      for (const a of addons) {
-        if (!cartServiceIds.has(a)) suggestions.add(a);
-      }
-    }
-    return Array.from(suggestions)
-      .map((id) => serviceOptions.find((s) => s.id === id))
-      .filter((s): s is ServiceOption => !!s && !s.priceOnRequest)
+    const cartServiceIds = new Set(cartItems.map((i) => i.serviceId));
+    const hasMainService = cartItems.some((i) => {
+      const svc = activeServices.find((s) => s.id === i.serviceId);
+      return svc && !svc.is_addon;
+    });
+    if (!hasMainService) return [];
+    return activeServices
+      .filter((s) => s.is_addon && !cartServiceIds.has(s.id) && s.service_durations.length > 0)
       .slice(0, 4);
-  }, [cartItems]);
+  }, [cartItems, activeServices]);
+
+  const addSuggestedAddon = useCallback((svc: ServiceWithDurations) => {
+    setCartItems((prev) => [...prev, {
+      uid: nextUid(),
+      serviceId: svc.id,
+      durationId: svc.service_durations[0]?.id ?? "",
+      quantity: 1,
+    }]);
+  }, []);
 
   const resetForm = () => {
     setCartItems([]);
-  };
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (cartItems.length === 0) {
-      toast({ title: "Sin servicios", description: "Agrega al menos un servicio a la reserva.", variant: "destructive" });
-      return;
-    }
-    const incomplete = cartItems.some((i) => {
-      const svc = serviceOptions.find((s) => s.id === i.serviceId);
-      return !svc || (svc.rates.length > 0 && i.rateIdx < 0);
-    });
-    if (incomplete) {
-      toast({ title: "Servicios incompletos", description: "Selecciona tarifa para todos los servicios.", variant: "destructive" });
-      return;
-    }
-    toast({ title: "Reserva creada", description: `${cartItems.length} servicio(s) — ${formatCOP(totalCOP)}` });
-    setOpen(false);
-    resetForm();
+    setClientId("");
+    setNationality("");
+    setLanguage("en");
+    setDate("");
+    setStartTime("");
+    setTherapistId("");
+    setSecondTherapistId("");
+    setResourceId("");
+    setSource("web");
+    setNotes("");
   };
 
   const formatDuration = (mins: number) => {
@@ -264,6 +138,71 @@ export default function BookingFormDialog() {
     if (h === 0) return `${m} min`;
     if (m === 0) return `${h}h`;
     return `${h}h ${m}min`;
+  };
+
+  const calculateEndTime = (start: string, mins: number) => {
+    if (!start || mins === 0) return "";
+    const [h, m] = start.split(":").map(Number);
+    const total = h * 60 + m + mins;
+    const eh = Math.floor(total / 60) % 24;
+    const em = total % 60;
+    return `${String(eh).padStart(2, "0")}:${String(em).padStart(2, "0")}`;
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (cartItems.length === 0) {
+      toast({ title: "Sin servicios", description: "Agrega al menos un servicio.", variant: "destructive" });
+      return;
+    }
+    const incomplete = cartItems.some((i) => !i.serviceId || !i.durationId);
+    if (incomplete) {
+      toast({ title: "Servicios incompletos", description: "Selecciona tarifa para todos.", variant: "destructive" });
+      return;
+    }
+    if (!date || !startTime) {
+      toast({ title: "Fecha requerida", description: "Selecciona fecha y hora.", variant: "destructive" });
+      return;
+    }
+
+    const endTime = calculateEndTime(startTime, totalMinutes);
+
+    try {
+      await createBooking.mutateAsync({
+        booking: {
+          client_id: clientId || null,
+          booking_date: date,
+          start_time: startTime,
+          end_time: endTime || startTime,
+          therapist_id: therapistId || null,
+          second_therapist_id: secondTherapistId || null,
+          resource_id: resourceId || null,
+          price_cop: totalCOP,
+          price_usd: totalUSD,
+          nationality: nationality || null,
+          preferred_language: language,
+          source: source as any,
+          notes: notes || null,
+          service_id: cartItems.length === 1 ? cartItems[0].serviceId : null,
+          service_duration_id: cartItems.length === 1 ? cartItems[0].durationId : null,
+        },
+        items: cartItems.map((item) => {
+          const dur = getDuration(item.serviceId, item.durationId);
+          return {
+            service_id: item.serviceId,
+            service_duration_id: item.durationId,
+            quantity: item.quantity,
+            price_cop: (dur?.price_cop ?? 0) * item.quantity,
+            price_usd: (dur?.price_usd ?? 0) * item.quantity,
+          };
+        }),
+      });
+      toast({ title: "Reserva creada", description: `${cartItems.length} servicio(s) — ${formatCOP(totalCOP)}` });
+      setOpen(false);
+      resetForm();
+    } catch (err: any) {
+      toast({ title: "Error al crear reserva", description: err.message, variant: "destructive" });
+    }
   };
 
   return (
@@ -279,36 +218,33 @@ export default function BookingFormDialog() {
           <DialogTitle className="font-heading text-xl">Nueva Reserva</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-5 mt-2">
-          {/* Client info */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="clientName">Nombre del Cliente</Label>
-              <Input id="clientName" placeholder="María García" required />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="clientPhone">WhatsApp / Teléfono</Label>
-              <Input id="clientPhone" placeholder="+57 300 123 4567" />
-            </div>
-          </div>
+          {/* Client selector */}
           <div className="space-y-1.5">
-            <Label htmlFor="clientEmail">Email</Label>
-            <Input id="clientEmail" type="email" placeholder="cliente@email.com" />
+            <Label>Cliente</Label>
+            <Select value={clientId} onValueChange={setClientId}>
+              <SelectTrigger><SelectValue placeholder="Seleccionar cliente..." /></SelectTrigger>
+              <SelectContent>
+                {(clients ?? []).map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}{c.phone ? ` — ${c.phone}` : ""}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Nationality & Language */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="nationality" className="flex items-center gap-1.5">
+              <Label className="flex items-center gap-1.5">
                 <Globe className="h-3.5 w-3.5 text-primary" /> País / Nacionalidad
               </Label>
-              <Input id="nationality" placeholder="Colombia, USA, UK..." />
+              <Input value={nationality} onChange={(e) => setNationality(e.target.value)} placeholder="Colombia, USA..." />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="language" className="flex items-center gap-1.5">
+              <Label className="flex items-center gap-1.5">
                 <Languages className="h-3.5 w-3.5 text-primary" /> Idioma Preferido
               </Label>
-              <Select defaultValue="en">
-                <SelectTrigger id="language"><SelectValue /></SelectTrigger>
+              <Select value={language} onValueChange={setLanguage}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="en">🇺🇸 English</SelectItem>
                   <SelectItem value="es">🇪🇸 Español</SelectItem>
@@ -324,40 +260,35 @@ export default function BookingFormDialog() {
                 <ShoppingCart className="h-4 w-4 text-primary" />
                 Servicios seleccionados
               </Label>
-              <Badge variant="secondary" className="text-xs">
-                {cartItems.length} servicio(s)
-              </Badge>
+              <Badge variant="secondary" className="text-xs">{cartItems.length} servicio(s)</Badge>
             </div>
 
-            {/* Cart items */}
             <div className="space-y-2">
               {cartItems.map((item) => {
-                const svc = serviceOptions.find((s) => s.id === item.serviceId);
-                const rate = svc && item.rateIdx >= 0 ? svc.rates[item.rateIdx] : null;
+                const svc = activeServices.find((s) => s.id === item.serviceId);
+                const dur = svc ? svc.service_durations.find((d) => d.id === item.durationId) : null;
                 return (
                   <Card key={item.uid} className="border-border/60 bg-muted/20">
                     <CardContent className="p-3 space-y-2">
                       <div className="flex gap-2">
-                        {/* Service selector */}
                         <div className="flex-1 space-y-1">
                           <label className="text-xs font-medium text-muted-foreground">Servicio</label>
                           <Select
                             value={item.serviceId}
-                            onValueChange={(v) => updateCartItem(item.uid, { serviceId: v, rateIdx: -1 })}
+                            onValueChange={(v) => updateCartItem(item.uid, { serviceId: v, durationId: "" })}
                           >
                             <SelectTrigger className="h-9 text-sm">
                               <SelectValue placeholder="Seleccionar servicio..." />
                             </SelectTrigger>
                             <SelectContent>
-                              {serviceOptions.filter((s) => !s.priceOnRequest).map((s) => (
+                              {activeServices.map((s) => (
                                 <SelectItem key={s.id} value={s.id}>
-                                  {s.isAddon && "⭐ "}{s.name}
+                                  {s.is_addon && "⭐ "}{s.name}
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         </div>
-                        {/* Remove */}
                         <Button
                           type="button"
                           variant="ghost"
@@ -369,28 +300,26 @@ export default function BookingFormDialog() {
                         </Button>
                       </div>
 
-                      {svc && svc.rates.length > 0 && (
+                      {svc && svc.service_durations.length > 0 && (
                         <div className="grid grid-cols-[1fr_80px] gap-2">
-                          {/* Rate */}
                           <div className="space-y-1">
                             <label className="text-xs font-medium text-muted-foreground">Duración / Tarifa</label>
                             <Select
-                              value={item.rateIdx >= 0 ? String(item.rateIdx) : ""}
-                              onValueChange={(v) => updateCartItem(item.uid, { rateIdx: Number(v) })}
+                              value={item.durationId}
+                              onValueChange={(v) => updateCartItem(item.uid, { durationId: v })}
                             >
                               <SelectTrigger className="h-9 text-sm">
                                 <SelectValue placeholder="Tarifa..." />
                               </SelectTrigger>
                               <SelectContent>
-                                {svc.rates.map((r, i) => (
-                                  <SelectItem key={i} value={String(i)}>
-                                    {r.label} — {r.priceCOP ? formatCOP(r.priceCOP) : ""}{r.priceUSD ? ` | $${r.priceUSD}` : ""}
+                                {svc.service_durations.map((d) => (
+                                  <SelectItem key={d.id} value={d.id}>
+                                    {d.duration_minutes} min — {formatCOP(d.price_cop)} | ${d.price_usd}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
                           </div>
-                          {/* Quantity */}
                           <div className="space-y-1">
                             <label className="text-xs font-medium text-muted-foreground">Cant.</label>
                             <Input
@@ -405,19 +334,17 @@ export default function BookingFormDialog() {
                         </div>
                       )}
 
-                      {/* Line total */}
-                      {rate && (
+                      {dur && (
                         <div className="flex justify-between text-xs text-muted-foreground pt-1 border-t border-border/30">
-                          <span>{rate.minutes ? `${rate.minutes * item.quantity} min` : "—"}</span>
+                          <span>{dur.duration_minutes * item.quantity} min</span>
                           <span className="font-medium text-foreground">
-                            {rate.priceCOP ? formatCOP(rate.priceCOP * item.quantity) : ""} | ${rate.priceUSD ? rate.priceUSD * item.quantity : 0} USD
+                            {formatCOP(dur.price_cop * item.quantity)} | ${dur.price_usd * item.quantity} USD
                           </span>
                         </div>
                       )}
 
-                      {/* Two therapists warning */}
-                      {svc?.requiresTwoTherapists && (
-                        <div className="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded">
+                      {svc?.requires_two_therapists && (
+                        <div className="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
                           <AlertTriangle className="h-3.5 w-3.5" />
                           Requiere dos terapeutas
                         </div>
@@ -428,7 +355,6 @@ export default function BookingFormDialog() {
               })}
             </div>
 
-            {/* Add service button */}
             <Button
               type="button"
               variant="outline"
@@ -454,11 +380,11 @@ export default function BookingFormDialog() {
                       variant="outline"
                       size="sm"
                       className="text-xs h-7 gap-1 border-accent/40 text-accent-foreground hover:bg-accent/10"
-                      onClick={() => addSuggestedAddon(svc.id)}
+                      onClick={() => addSuggestedAddon(svc)}
                     >
                       <Plus className="h-3 w-3" />
                       {svc.name}
-                      {svc.rates[0]?.priceCOP ? ` — ${formatCOP(svc.rates[0].priceCOP)}` : ""}
+                      {svc.service_durations[0] ? ` — ${formatCOP(svc.service_durations[0].price_cop)}` : ""}
                     </Button>
                   ))}
                 </div>
@@ -503,20 +429,19 @@ export default function BookingFormDialog() {
           {/* Date & Time */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="date">Fecha</Label>
-              <Input id="date" type="date" required />
+              <Label>Fecha</Label>
+              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="startTime">Hora Inicio</Label>
-              <Input id="startTime" type="time" required />
+              <Label>Hora Inicio</Label>
+              <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} required />
             </div>
           </div>
 
-          {/* End time auto-calculated */}
-          {totalMinutes > 0 && (
+          {totalMinutes > 0 && startTime && (
             <div className="text-xs text-muted-foreground bg-muted/30 px-3 py-2 rounded-md flex items-center gap-1.5">
               <Clock className="h-3.5 w-3.5" />
-              La reserva ocupará un bloque de <span className="font-semibold">{formatDuration(totalMinutes)}</span> desde la hora de inicio.
+              Bloque de <span className="font-semibold">{formatDuration(totalMinutes)}</span> — termina a las {calculateEndTime(startTime, totalMinutes)}
             </div>
           )}
 
@@ -524,41 +449,40 @@ export default function BookingFormDialog() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Terapeuta</Label>
-              <Select>
+              <Select value={therapistId} onValueChange={setTherapistId}>
                 <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ana">Ana Pérez</SelectItem>
-                  <SelectItem value="juan">Juan Rivera</SelectItem>
-                  <SelectItem value="sofia">Sofia Torres</SelectItem>
+                  {activeTherapists.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Recurso / Sala</Label>
-              <Select>
+              <Select value={resourceId} onValueChange={setResourceId}>
                 <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
                 <SelectContent>
-                  {rooms.map((r) => (
-                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                  {(resources ?? []).filter((r) => r.is_active).map((r) => (
+                    <SelectItem key={r.id} value={r.id}>{r.name} ({r.type})</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          {/* Second therapist if needed */}
           {requiresTwoTherapists && (
             <div className="space-y-1.5">
               <Label className="flex items-center gap-1.5">
                 <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
                 Segundo Terapeuta
               </Label>
-              <Select>
+              <Select value={secondTherapistId} onValueChange={setSecondTherapistId}>
                 <SelectTrigger><SelectValue placeholder="Seleccionar segundo terapeuta..." /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ana">Ana Pérez</SelectItem>
-                  <SelectItem value="juan">Juan Rivera</SelectItem>
-                  <SelectItem value="sofia">Sofia Torres</SelectItem>
+                  {activeTherapists.filter((t) => t.id !== therapistId).map((t) => (
+                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -583,7 +507,7 @@ export default function BookingFormDialog() {
           {/* Source */}
           <div className="space-y-1.5">
             <Label>Fuente</Label>
-            <Select defaultValue="web">
+            <Select value={source} onValueChange={setSource}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {sources.map((s) => (
@@ -595,16 +519,14 @@ export default function BookingFormDialog() {
 
           {/* Notes */}
           <div className="space-y-1.5">
-            <Label htmlFor="notes">Notas</Label>
-            <Textarea id="notes" placeholder="Notas adicionales..." rows={2} />
+            <Label>Notas</Label>
+            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notas adicionales..." rows={2} />
           </div>
 
           <div className="flex gap-3 pt-2">
-            <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit" variant="spa" className="flex-1">
-              Crear Reserva
+            <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)}>Cancelar</Button>
+            <Button type="submit" variant="spa" className="flex-1" disabled={createBooking.isPending}>
+              {createBooking.isPending ? "Creando..." : "Crear Reserva"}
             </Button>
           </div>
         </form>
