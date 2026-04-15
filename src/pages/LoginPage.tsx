@@ -3,22 +3,39 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login, user } = useAuth();
+  const { toast } = useToast();
+
+  const from = (location.state as any)?.from?.pathname || "/";
+
+  // Already logged in
+  if (user) {
+    navigate(from, { replace: true });
+    return null;
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // TODO: Supabase auth
-    setTimeout(() => {
-      navigate("/");
+    try {
+      await login(email, password);
+      toast({ title: "Bienvenido", description: `Sesión iniciada como ${email}` });
+      navigate(from, { replace: true });
+    } catch {
+      toast({ title: "Error", description: "No se pudo iniciar sesión.", variant: "destructive" });
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   return (
@@ -34,7 +51,7 @@ export default function LoginPage() {
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Correo electrónico</Label>
-              <Input id="email" type="email" placeholder="tu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <Input id="email" type="email" placeholder="admin@spalleras.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Contraseña</Label>
@@ -45,7 +62,14 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <p className="text-xs text-center text-muted-foreground mt-6">
+          <div className="mt-6 p-3 bg-muted/50 rounded-lg">
+            <p className="text-xs text-muted-foreground text-center">
+              <strong>Demo:</strong> Usa cualquier email/contraseña.<br />
+              Emails con "admin" → rol Admin, otros → rol Staff.
+            </p>
+          </div>
+
+          <p className="text-xs text-center text-muted-foreground mt-4">
             © {new Date().getFullYear()} Spa Lleras Central · Medellín, Colombia
           </p>
         </CardContent>
