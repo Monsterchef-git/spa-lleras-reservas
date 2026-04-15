@@ -18,7 +18,8 @@ const resources = [
   { name: "Fuego", type: "Sala", status: "Disponible", note: "Doble" },
   { name: "Yin and Yang", type: "Sala", status: "Disponible", note: "Doble" },
   { name: "Africa", type: "Sala", status: "Disponible", note: "Doble" },
-  { name: "El Consultorio", type: "Consultorio", status: "Disponible" },
+  { name: "Consultorio 1", type: "Consultorio", status: "Disponible" },
+  { name: "Consultorio 2", type: "Consultorio", status: "Disponible" },
   { name: "Rooftop", type: "Experiencia", status: "Disponible", note: "Puede ser compartido o privado" },
 ];
 

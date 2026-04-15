@@ -215,7 +215,7 @@ export default function DashboardPage() {
 
         {/* Occupancy */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {["Agua", "Aire", "Tierra", "Fuego", "Yin and Yang", "Africa", "El Consultorio", "Rooftop"].map((resource) => (
+          {["Agua", "Aire", "Tierra", "Fuego", "Yin and Yang", "Africa", "Consultorio 1", "Consultorio 2", "Rooftop"].map((resource) => (
             <Card key={resource} className="border-border/50 shadow-sm">
               <CardContent className="p-4">
                 <h3 className="font-medium text-sm">{resource}</h3>
