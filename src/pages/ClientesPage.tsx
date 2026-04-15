@@ -2,39 +2,78 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Phone, Mail, Calendar, Edit } from "lucide-react";
+import { Plus, Search, Phone, Mail, Edit, Trash2, Loader2 } from "lucide-react";
 import { useState } from "react";
 import ClientFormDialog, { type ClientFormData } from "@/components/ClientFormDialog";
-
-interface Client extends ClientFormData {
-  visits: number;
-  lastVisit: string;
-}
-
-const initialClients: Client[] = [
-  { name: "María García", phone: "+57 300 123 4567", email: "maria@email.com", visits: 12, lastVisit: "2024-01-15", notes: "Prefiere masaje relajante con aceite de lavanda" },
-  { name: "Carlos López", phone: "+57 310 987 6543", email: "carlos@email.com", visits: 5, lastVisit: "2024-01-14", notes: "Tiene dolor crónico en espalda baja" },
-  { name: "Laura Martínez", phone: "+57 320 555 1234", email: "laura@email.com", visits: 8, lastVisit: "2024-01-13", notes: "" },
-  { name: "James Smith", phone: "+1 555 123 4567", email: "james@email.com", visits: 2, lastVisit: "2024-01-12", notes: "Turista, habla inglés" },
-  { name: "Isabella Rodríguez", phone: "+57 315 222 3333", email: "isabella@email.com", visits: 15, lastVisit: "2024-01-10", notes: "Cliente VIP" },
-  { name: "Pedro Sánchez", phone: "+57 301 444 5555", email: "", visits: 1, lastVisit: "2024-01-08", notes: "Primera visita" },
-];
+import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from "@/hooks/useClients";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function ClientesPage() {
-  const [clients, setClients] = useState<Client[]>(initialClients);
+  const { data: clients, isLoading } = useClients();
+  const createClient = useCreateClient();
+  const updateClient = useUpdateClient();
+  const deleteClient = useDeleteClient();
+  const { toast } = useToast();
   const [search, setSearch] = useState("");
 
-  const filtered = clients.filter(
-    (c) => c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search) || c.email.toLowerCase().includes(search.toLowerCase())
+  const filtered = (clients ?? []).filter(
+    (c) =>
+      c.name.toLowerCase().includes(search.toLowerCase()) ||
+      (c.phone ?? "").includes(search) ||
+      (c.email ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleAdd = (data: ClientFormData) => {
-    setClients((prev) => [...prev, { ...data, visits: 0, lastVisit: new Date().toISOString().split("T")[0] }]);
+  const handleAdd = async (data: ClientFormData) => {
+    try {
+      await createClient.mutateAsync({
+        name: data.name,
+        phone: data.phone || null,
+        email: data.email || null,
+        notes: data.notes || null,
+      });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
   };
 
-  const handleEdit = (index: number, data: ClientFormData) => {
-    setClients((prev) => prev.map((c, i) => (i === index ? { ...c, ...data } : c)));
+  const handleEdit = async (id: string, data: ClientFormData) => {
+    try {
+      await updateClient.mutateAsync({
+        id,
+        data: {
+          name: data.name,
+          phone: data.phone || null,
+          email: data.email || null,
+          notes: data.notes || null,
+        },
+      });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
   };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteClient.mutateAsync(id);
+      toast({ title: "Cliente eliminado" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
@@ -42,7 +81,7 @@ export default function ClientesPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="font-heading text-2xl lg:text-3xl font-bold">Clientes</h1>
-            <p className="text-muted-foreground text-sm mt-1">{clients.length} clientes registrados</p>
+            <p className="text-muted-foreground text-sm mt-1">{clients?.length ?? 0} clientes registrados</p>
           </div>
           <ClientFormDialog
             trigger={
@@ -60,34 +99,51 @@ export default function ClientesPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((c, i) => (
-            <Card key={`${c.name}-${i}`} className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
+          {filtered.map((c) => (
+            <Card key={c.id} className="border-border/50 shadow-sm hover:shadow-md transition-shadow">
               <CardContent className="p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent font-semibold text-sm">
-                      {c.name.split(" ").map(n => n[0]).join("")}
+                      {c.name.split(" ").map((n) => n[0]).join("")}
                     </div>
-                    <div>
-                      <h3 className="font-medium">{c.name}</h3>
-                      <p className="text-xs text-muted-foreground">{c.visits} visitas</p>
-                    </div>
+                    <h3 className="font-medium">{c.name}</h3>
                   </div>
-                  <ClientFormDialog
-                    client={c}
-                    trigger={
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Edit className="h-3.5 w-3.5" />
-                      </Button>
-                    }
-                    onSave={(data) => handleEdit(i, data)}
-                  />
+                  <div className="flex gap-1">
+                    <ClientFormDialog
+                      client={{ name: c.name, phone: c.phone ?? "", email: c.email ?? "", notes: c.notes ?? "" }}
+                      trigger={
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Edit className="h-3.5 w-3.5" />
+                        </Button>
+                      }
+                      onSave={(data) => handleEdit(c.id, data)}
+                    />
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>¿Eliminar cliente?</AlertDialogTitle>
+                          <AlertDialogDescription>Se eliminará "{c.name}" permanentemente.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDelete(c.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            Eliminar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
 
                 <div className="space-y-1.5 text-sm text-muted-foreground">
                   {c.phone && <div className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> {c.phone}</div>}
                   {c.email && <div className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" /> {c.email}</div>}
-                  <div className="flex items-center gap-2"><Calendar className="h-3.5 w-3.5" /> Última visita: {c.lastVisit}</div>
                 </div>
 
                 {c.notes && (
@@ -99,7 +155,7 @@ export default function ClientesPage() {
 
           {filtered.length === 0 && (
             <div className="col-span-full text-center py-12 text-muted-foreground">
-              No se encontraron clientes con "{search}"
+              {search ? `No se encontraron clientes con "${search}"` : "No hay clientes registrados."}
             </div>
           )}
         </div>
