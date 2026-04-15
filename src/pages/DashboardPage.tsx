@@ -2,6 +2,46 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { CalendarDays, Clock, Users, TrendingUp, CheckCircle, AlertCircle, XCircle, Timer } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Calendar, momentLocalizer, Views, type Event } from "react-big-calendar";
+import moment from "moment";
+import "moment/locale/es";
+import "react-big-calendar/lib/css/react-big-calendar.css";
+import { useCallback, useMemo, useState } from "react";
+
+moment.locale("es");
+const localizer = momentLocalizer(moment);
+
+interface BookingEvent extends Event {
+  client: string;
+  service: string;
+  therapist: string;
+  room: string;
+  status: string;
+}
+
+const today = new Date();
+const d = (h: number, m = 0) => new Date(today.getFullYear(), today.getMonth(), today.getDate(), h, m);
+const tomorrow = new Date(today);
+tomorrow.setDate(tomorrow.getDate() + 1);
+const dt = (h: number, m = 0) => new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), h, m);
+
+const sampleEvents: BookingEvent[] = [
+  { title: "María García — Masaje Relajante 60min", start: d(9, 0), end: d(10, 0), client: "María García", service: "Masaje Relajante 60min", therapist: "Ana", room: "Sala 1", status: "Completada" },
+  { title: "Carlos López — Tejido Profundo 90min", start: d(10, 30), end: d(12, 0), client: "Carlos López", service: "Tejido Profundo 90min", therapist: "Juan", room: "Sala 2", status: "Confirmada" },
+  { title: "Laura Martínez — Facial Premium", start: d(11, 0), end: d(12, 0), client: "Laura Martínez", service: "Facial Premium", therapist: "Sofia", room: "Sala 1", status: "Pendiente" },
+  { title: "James Smith — Cuatro Manos 60min", start: d(14, 0), end: d(15, 0), client: "James Smith", service: "Masaje a Cuatro Manos 60min", therapist: "Ana & Juan", room: "Sala 2", status: "Confirmada" },
+  { title: "Isabella Rodríguez — Rooftop Experience", start: d(15, 30), end: d(17, 0), client: "Isabella Rodríguez", service: "Rooftop Experience", therapist: "—", room: "Rooftop", status: "Confirmada" },
+  { title: "Pedro Sánchez — Masaje Relajante 40min", start: d(16, 0), end: d(16, 40), client: "Pedro Sánchez", service: "Masaje Relajante 40min", therapist: "Sofia", room: "Sala 1", status: "Pendiente" },
+  { title: "Andrea Ruiz — Tejido Profundo 60min", start: dt(9, 0), end: dt(10, 0), client: "Andrea Ruiz", service: "Tejido Profundo 60min", therapist: "Ana", room: "Sala 1", status: "Confirmada" },
+  { title: "Diego Fernández — Masaje Relajante 90min", start: dt(11, 0), end: dt(12, 30), client: "Diego Fernández", service: "Masaje Relajante 90min", therapist: "Juan", room: "Sala 2", status: "Pendiente" },
+];
+
+const statusColors: Record<string, string> = {
+  Completada: "hsl(210, 60%, 50%)",
+  Confirmada: "hsl(168, 45%, 40%)",
+  Pendiente: "hsl(42, 60%, 55%)",
+  Cancelada: "hsl(0, 72%, 51%)",
+};
 
 const stats = [
   { label: "Reservas Hoy", value: "8", icon: CalendarDays, change: "+2 vs ayer" },
@@ -26,15 +66,49 @@ const statusConfig: Record<string, { icon: React.ElementType; className: string 
   Cancelada: { icon: XCircle, className: "status-badge-cancelled" },
 };
 
+const messages = {
+  allDay: "Todo el día",
+  previous: "Anterior",
+  next: "Siguiente",
+  today: "Hoy",
+  month: "Mes",
+  week: "Semana",
+  day: "Día",
+  agenda: "Agenda",
+  date: "Fecha",
+  time: "Hora",
+  event: "Evento",
+  noEventsInRange: "No hay reservas en este rango.",
+  showMore: (total: number) => `+${total} más`,
+};
+
 export default function DashboardPage() {
+  const [view, setView] = useState<(typeof Views)[keyof typeof Views]>(Views.WEEK);
+  const [date, setDate] = useState(new Date());
+
+  const eventStyleGetter = useCallback((event: BookingEvent) => {
+    const bg = statusColors[event.status] || "hsl(168, 45%, 40%)";
+    return {
+      style: {
+        backgroundColor: bg,
+        borderRadius: "6px",
+        border: "none",
+        color: "#fff",
+        fontSize: "0.75rem",
+        padding: "2px 6px",
+        opacity: 0.95,
+      },
+    };
+  }, []);
+
+  const { defaultDate } = useMemo(() => ({ defaultDate: new Date() }), []);
+
   return (
     <AppLayout>
       <div className="space-y-6 animate-fade-in">
         {/* Header */}
         <div>
-          <h1 className="font-heading text-2xl lg:text-3xl font-bold text-foreground">
-            Dashboard
-          </h1>
+          <h1 className="font-heading text-2xl lg:text-3xl font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground text-sm mt-1">
             Hoy, {new Date().toLocaleDateString("es-CO", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
           </p>
@@ -59,6 +133,40 @@ export default function DashboardPage() {
             </Card>
           ))}
         </div>
+
+        {/* Calendar */}
+        <Card className="border-border/50 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="font-heading text-lg flex items-center gap-2">
+              <CalendarDays className="h-5 w-5 text-primary" />
+              Calendario de Reservas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="spa-calendar">
+              <Calendar<BookingEvent>
+                localizer={localizer}
+                events={sampleEvents}
+                defaultDate={defaultDate}
+                date={date}
+                onNavigate={setDate}
+                view={view}
+                onView={setView}
+                views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
+                startAccessor="start"
+                endAccessor="end"
+                style={{ height: 600 }}
+                eventPropGetter={eventStyleGetter}
+                messages={messages}
+                min={new Date(0, 0, 0, 7, 0)}
+                max={new Date(0, 0, 0, 21, 0)}
+                step={30}
+                timeslots={2}
+                popup
+              />
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Today's Schedule */}
         <Card className="border-border/50 shadow-sm">
@@ -130,6 +238,16 @@ export default function DashboardPage() {
                 </div>
               </CardContent>
             </Card>
+          ))}
+        </div>
+
+        {/* Calendar Legend */}
+        <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+          {Object.entries(statusColors).map(([status, color]) => (
+            <div key={status} className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm inline-block" style={{ backgroundColor: color }} />
+              {status}
+            </div>
           ))}
         </div>
       </div>
