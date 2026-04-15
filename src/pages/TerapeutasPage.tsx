@@ -1,10 +1,19 @@
+import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Calendar } from "lucide-react";
+import TherapistFormDialog from "@/components/TherapistFormDialog";
 
-const therapists = [
+interface Therapist {
+  name: string;
+  specialties: string[];
+  schedule: string;
+  available: boolean;
+}
+
+const initialTherapists: Therapist[] = [
   { name: "Ana Pérez", specialties: ["Relajante", "Cuatro Manos"], schedule: "Lun-Vie 8:00-16:00", available: true },
   { name: "Juan Rivera", specialties: ["Tejido Profundo", "Cuatro Manos"], schedule: "Lun-Sáb 9:00-17:00", available: true },
   { name: "Sofia Torres", specialties: ["Faciales", "Relajante"], schedule: "Mar-Sáb 10:00-18:00", available: true },
@@ -24,6 +33,16 @@ const resources = [
 ];
 
 export default function TerapeutasPage() {
+  const [therapists, setTherapists] = useState<Therapist[]>(initialTherapists);
+
+  const handleAdd = (data: Therapist) => {
+    setTherapists((prev) => [...prev, data]);
+  };
+
+  const handleEdit = (index: number, data: Therapist) => {
+    setTherapists((prev) => prev.map((t, i) => (i === index ? data : t)));
+  };
+
   return (
     <AppLayout>
       <div className="space-y-8 animate-fade-in">
@@ -34,14 +53,19 @@ export default function TerapeutasPage() {
               <h1 className="font-heading text-2xl lg:text-3xl font-bold">Terapeutas</h1>
               <p className="text-muted-foreground text-sm mt-1">Equipo del spa</p>
             </div>
-            <Button variant="spa" className="gap-2">
-              <Plus className="h-4 w-4" /> Agregar Terapeuta
-            </Button>
+            <TherapistFormDialog
+              trigger={
+                <Button variant="spa" className="gap-2">
+                  <Plus className="h-4 w-4" /> Agregar Terapeuta
+                </Button>
+              }
+              onSave={handleAdd}
+            />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {therapists.map((t) => (
-              <Card key={t.name} className="border-border/50 shadow-sm">
+            {therapists.map((t, i) => (
+              <Card key={`${t.name}-${i}`} className="border-border/50 shadow-sm">
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
@@ -60,9 +84,15 @@ export default function TerapeutasPage() {
                       <Badge variant={t.available ? "default" : "secondary"} className={t.available ? "bg-green-100 text-green-800 border-green-200" : ""}>
                         {t.available ? "Activa" : "Inactiva"}
                       </Badge>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Edit className="h-3.5 w-3.5" />
-                      </Button>
+                      <TherapistFormDialog
+                        therapist={t}
+                        trigger={
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Edit className="h-3.5 w-3.5" />
+                          </Button>
+                        }
+                        onSave={(data) => handleEdit(i, data)}
+                      />
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-1.5 mt-3">
