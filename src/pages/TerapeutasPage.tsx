@@ -12,8 +12,13 @@ const therapists = [
 ];
 
 const resources = [
-  { name: "Sala de Masajes 1", type: "Sala", status: "Disponible" },
-  { name: "Sala de Masajes 2", type: "Sala", status: "Ocupada" },
+  { name: "Agua", type: "Sala", status: "Disponible", note: "Doble · Tiene jacuzzi" },
+  { name: "Aire", type: "Sala", status: "Disponible" },
+  { name: "Tierra", type: "Sala", status: "Disponible" },
+  { name: "Fuego", type: "Sala", status: "Disponible", note: "Doble" },
+  { name: "Yin and Yang", type: "Sala", status: "Disponible", note: "Doble" },
+  { name: "Africa", type: "Sala", status: "Disponible", note: "Doble" },
+  { name: "El Consultorio", type: "Consultorio", status: "Disponible" },
   { name: "Rooftop", type: "Experiencia", status: "Disponible", note: "Puede ser compartido o privado" },
 ];
 
@@ -73,7 +78,7 @@ export default function TerapeutasPage() {
         {/* Resources */}
         <div>
           <h2 className="font-heading text-xl font-bold mb-4">Recursos</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {resources.map((r) => (
               <Card key={r.name} className="border-border/50 shadow-sm">
                 <CardContent className="p-5">

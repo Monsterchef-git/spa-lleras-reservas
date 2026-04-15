@@ -214,16 +214,16 @@ export default function DashboardPage() {
         </Card>
 
         {/* Occupancy */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {["Sala de Masajes 1", "Sala de Masajes 2", "Rooftop"].map((resource) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {["Agua", "Aire", "Tierra", "Fuego", "Yin and Yang", "Africa", "El Consultorio", "Rooftop"].map((resource) => (
             <Card key={resource} className="border-border/50 shadow-sm">
               <CardContent className="p-4">
                 <h3 className="font-medium text-sm">{resource}</h3>
                 <div className="mt-3 space-y-2">
                   {[
-                    { time: "09:00 - 10:00", busy: resource !== "Rooftop" },
-                    { time: "10:30 - 12:00", busy: true },
-                    { time: "14:00 - 15:00", busy: resource === "Sala de Masajes 2" },
+                    { time: "09:00 - 10:00", busy: ["Agua", "Aire", "Tierra"].includes(resource) },
+                    { time: "10:30 - 12:00", busy: ["Fuego", "Yin and Yang"].includes(resource) },
+                    { time: "14:00 - 15:00", busy: ["Africa", "El Consultorio"].includes(resource) },
                     { time: "15:30 - 16:30", busy: resource === "Rooftop" },
                   ].map((slot) => (
                     <div
