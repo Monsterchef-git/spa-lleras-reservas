@@ -1,83 +1,379 @@
+import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Globe, MessageSquare, Mail, Upload, Calendar } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
+import {
+  Globe, MessageSquare, Mail, Upload, Calendar, Bell,
+  Save, RotateCcw, Settings2, Building2, Clock, Shield
+} from "lucide-react";
 
-const integrations = [
-  { name: "Fresha → Google Calendar", description: "Sincronización bidireccional de reservas con Google Calendar.", icon: Calendar, status: "Placeholder" },
-  { name: "WhatsApp Business API", description: "Webhook vía Make.com para parsear mensajes y crear reservas automáticamente.", icon: MessageSquare, status: "Placeholder" },
-  { name: "Email / Gmail API", description: "Forward de emails o integración directa con Gmail para reservas por correo.", icon: Mail, status: "Placeholder" },
-  { name: "Importar CSV/Excel", description: "Importar reservas antiguas desde archivos CSV o Excel.", icon: Upload, status: "Placeholder" },
-  { name: "Notificaciones Automáticas", description: "Recordatorios 24h antes vía email y WhatsApp.", icon: Globe, status: "Placeholder" },
+const STORAGE_KEY = "spa_lleras_config";
+
+interface SpaConfig {
+  // Business Rules
+  timezone: string;
+  currency: string;
+  showUsd: boolean;
+  language: string;
+  reminderTime: string;
+  doubleBookingCheck: boolean;
+  cancellationPolicy: string;
+  depositPercent: number;
+  // Spa Info
+  spaName: string;
+  address: string;
+  phone: string;
+  email: string;
+  openTime: string;
+  closeTime: string;
+  welcomeEs: string;
+  welcomeEn: string;
+  // Integrations
+  integrations: Record<string, { connected: boolean; lastSync: string; config: Record<string, string> }>;
+  // Meta
+  lastModified: string;
+  lastModifiedBy: string;
+}
+
+const DEFAULT_CONFIG: SpaConfig = {
+  timezone: "America/Bogota",
+  currency: "COP",
+  showUsd: true,
+  language: "es",
+  reminderTime: "24h",
+  doubleBookingCheck: true,
+  cancellationPolicy: "Las cancelaciones deben realizarse con al menos 24 horas de anticipación. Cancelaciones tardías están sujetas a un cargo del 50% del valor del servicio. No-shows serán cobrados al 100%.",
+  depositPercent: 30,
+  spaName: "Spa Lleras",
+  address: "Parque Lleras, Medellín, Colombia",
+  phone: "+57 300 123 4567",
+  email: "reservas@spalleras.com",
+  openTime: "10:00",
+  closeTime: "20:00",
+  welcomeEs: "¡Bienvenido a Spa Lleras! Tu oasis de relajación en el corazón de Medellín.",
+  welcomeEn: "Welcome to Spa Lleras! Your relaxation oasis in the heart of Medellín.",
+  integrations: {
+    gcal: { connected: false, lastSync: "", config: { calendarId: "", apiKey: "" } },
+    whatsapp: { connected: false, lastSync: "", config: { webhookUrl: "", phoneNumber: "", apiToken: "" } },
+    email: { connected: false, lastSync: "", config: { smtpHost: "", smtpPort: "587", smtpUser: "", smtpPass: "" } },
+    csv: { connected: false, lastSync: "", config: {} },
+    notifications: { connected: false, lastSync: "", config: { emailEnabled: "true", whatsappEnabled: "true" } },
+  },
+  lastModified: "",
+  lastModifiedBy: "",
+};
+
+const INTEGRATION_META = [
+  { key: "gcal", name: "Google Calendar", description: "Sincronización bidireccional de reservas con Google Calendar.", icon: Calendar, fields: [{ key: "calendarId", label: "Calendar ID" }, { key: "apiKey", label: "API Key" }] },
+  { key: "whatsapp", name: "WhatsApp Business API", description: "Webhook vía Make.com para parsear mensajes y crear reservas.", icon: MessageSquare, fields: [{ key: "webhookUrl", label: "Webhook URL" }, { key: "phoneNumber", label: "Número de teléfono" }, { key: "apiToken", label: "API Token" }] },
+  { key: "email", name: "Email / Gmail API", description: "Integración con Gmail para reservas por correo electrónico.", icon: Mail, fields: [{ key: "smtpHost", label: "SMTP Host" }, { key: "smtpPort", label: "SMTP Port" }, { key: "smtpUser", label: "Usuario" }, { key: "smtpPass", label: "Contraseña" }] },
+  { key: "csv", name: "Importar CSV/Excel", description: "Importar reservas antiguas desde archivos CSV o Excel.", icon: Upload, fields: [] },
+  { key: "notifications", name: "Notificaciones Automáticas", description: "Recordatorios automáticos vía email y WhatsApp.", icon: Bell, fields: [{ key: "emailEnabled", label: "Email habilitado (true/false)" }, { key: "whatsappEnabled", label: "WhatsApp habilitado (true/false)" }] },
 ];
 
+function loadConfig(): SpaConfig {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return { ...DEFAULT_CONFIG, ...JSON.parse(raw) };
+  } catch {}
+  return { ...DEFAULT_CONFIG };
+}
+
 export default function ConfiguracionPage() {
+  const [config, setConfig] = useState<SpaConfig>(loadConfig);
+  const [integrationModal, setIntegrationModal] = useState<string | null>(null);
+  const [modalFields, setModalFields] = useState<Record<string, string>>({});
+
+  const update = <K extends keyof SpaConfig>(key: K, value: SpaConfig[K]) => {
+    setConfig((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const saveAll = () => {
+    const updated = { ...config, lastModified: new Date().toISOString(), lastModifiedBy: "Admin" };
+    setConfig(updated);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    toast.success("Configuración guardada correctamente");
+  };
+
+  const resetDefaults = () => {
+    setConfig({ ...DEFAULT_CONFIG });
+    localStorage.removeItem(STORAGE_KEY);
+    toast("Valores por defecto restaurados");
+  };
+
+  const openIntegrationModal = (key: string) => {
+    setModalFields({ ...config.integrations[key]?.config });
+    setIntegrationModal(key);
+  };
+
+  const saveIntegrationModal = () => {
+    if (!integrationModal) return;
+    setConfig((prev) => ({
+      ...prev,
+      integrations: {
+        ...prev.integrations,
+        [integrationModal]: { ...prev.integrations[integrationModal], config: { ...modalFields } },
+      },
+    }));
+    setIntegrationModal(null);
+    toast.success("Configuración de integración actualizada");
+  };
+
+  const toggleIntegration = (key: string, connected: boolean) => {
+    setConfig((prev) => ({
+      ...prev,
+      integrations: {
+        ...prev.integrations,
+        [key]: {
+          ...prev.integrations[key],
+          connected,
+          lastSync: connected ? new Date().toLocaleString("es-CO") : prev.integrations[key].lastSync,
+        },
+      },
+    }));
+  };
+
+  const meta = INTEGRATION_META.find((m) => m.key === integrationModal);
+
   return (
     <AppLayout>
-      <div className="space-y-6 animate-fade-in">
-        <div>
-          <h1 className="font-heading text-2xl lg:text-3xl font-bold">Configuración</h1>
-          <p className="text-muted-foreground text-sm mt-1">Integraciones y ajustes del sistema</p>
+      <div className="space-y-6 animate-fade-in max-w-4xl">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="font-heading text-2xl lg:text-3xl font-bold">Configuración</h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              {config.lastModified
+                ? `Última modificación: ${new Date(config.lastModified).toLocaleString("es-CO")} por ${config.lastModifiedBy}`
+                : "Sin modificaciones recientes"}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={resetDefaults}>
+              <RotateCcw className="h-4 w-4 mr-1" /> Restaurar
+            </Button>
+            <Button size="sm" onClick={saveAll} className="bg-primary hover:bg-primary/90">
+              <Save className="h-4 w-4 mr-1" /> Guardar todos los cambios
+            </Button>
+          </div>
         </div>
+
+        {/* Spa Info */}
+        <Card className="border-border/50 shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="font-heading text-lg flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-primary" /> Ajustes Generales del Spa
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Nombre del Spa</Label>
+              <Input value={config.spaName} onChange={(e) => update("spaName", e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Dirección</Label>
+              <Input value={config.address} onChange={(e) => update("address", e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Teléfono / WhatsApp</Label>
+              <Input value={config.phone} onChange={(e) => update("phone", e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Email de Reservas</Label>
+              <Input type="email" value={config.email} onChange={(e) => update("email", e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Hora Apertura</Label>
+              <Input type="time" value={config.openTime} onChange={(e) => update("openTime", e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Hora Cierre</Label>
+              <Input type="time" value={config.closeTime} onChange={(e) => update("closeTime", e.target.value)} />
+            </div>
+            <div className="space-y-1.5 md:col-span-2">
+              <Label>Mensaje de bienvenida (Español)</Label>
+              <Textarea rows={2} value={config.welcomeEs} onChange={(e) => update("welcomeEs", e.target.value)} />
+            </div>
+            <div className="space-y-1.5 md:col-span-2">
+              <Label>Mensaje de bienvenida (English)</Label>
+              <Textarea rows={2} value={config.welcomeEn} onChange={(e) => update("welcomeEn", e.target.value)} />
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Business Rules */}
         <Card className="border-border/50 shadow-sm">
-          <CardHeader>
-            <CardTitle className="font-heading text-lg">Reglas de Negocio</CardTitle>
+          <CardHeader className="pb-4">
+            <CardTitle className="font-heading text-lg flex items-center gap-2">
+              <Settings2 className="h-5 w-5 text-primary" /> Reglas de Negocio
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex justify-between items-center py-2 border-b border-border/50">
-              <span className="text-muted-foreground">Zona Horaria</span>
-              <span className="font-medium">America/Bogota (GMT-5)</span>
+          <CardContent className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Zona Horaria</Label>
+                <Select value={config.timezone} onValueChange={(v) => update("timezone", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="America/Bogota">America/Bogota (GMT-5)</SelectItem>
+                    <SelectItem value="America/New_York">America/New_York (GMT-5/-4)</SelectItem>
+                    <SelectItem value="America/Mexico_City">America/Mexico_City (GMT-6)</SelectItem>
+                    <SelectItem value="America/Lima">America/Lima (GMT-5)</SelectItem>
+                    <SelectItem value="Europe/Madrid">Europe/Madrid (GMT+1/+2)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Idioma</Label>
+                <Select value={config.language} onValueChange={(v) => update("language", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="es">Español</SelectItem>
+                    <SelectItem value="en">English</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Moneda Principal</Label>
+                <Input value={config.currency} onChange={(e) => update("currency", e.target.value)} />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Recordatorios</Label>
+                <Select value={config.reminderTime} onValueChange={(v) => update("reminderTime", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="2h">2 horas antes</SelectItem>
+                    <SelectItem value="24h">24 horas antes</SelectItem>
+                    <SelectItem value="48h">48 horas antes</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Depósito requerido (%)</Label>
+                <Input type="number" min={0} max={100} value={config.depositPercent} onChange={(e) => update("depositPercent", Number(e.target.value))} />
+              </div>
             </div>
-            <div className="flex justify-between items-center py-2 border-b border-border/50">
-              <span className="text-muted-foreground">Moneda Principal</span>
-              <span className="font-medium">COP (también muestra USD)</span>
+
+            <Separator />
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Mostrar precios en USD</p>
+                <p className="text-xs text-muted-foreground">Muestra la conversión a dólares junto al precio en COP</p>
+              </div>
+              <Switch checked={config.showUsd} onCheckedChange={(v) => update("showUsd", v)} />
             </div>
-            <div className="flex justify-between items-center py-2 border-b border-border/50">
-              <span className="text-muted-foreground">Idioma</span>
-              <span className="font-medium">Español</span>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium flex items-center gap-1.5">
+                  <Shield className="h-4 w-4 text-primary" /> Verificación de Doble Booking
+                </p>
+                <p className="text-xs text-muted-foreground">Evita que se reserven dos servicios en el mismo horario y recurso</p>
+              </div>
+              <Switch checked={config.doubleBookingCheck} onCheckedChange={(v) => update("doubleBookingCheck", v)} />
             </div>
-            <div className="flex justify-between items-center py-2 border-b border-border/50">
-              <span className="text-muted-foreground">Recordatorios</span>
-              <span className="font-medium">24 horas antes</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-border/50">
-              <span className="text-muted-foreground">Doble Booking</span>
-              <span className="font-medium text-primary">Verificación automática activa</span>
-            </div>
-            <div className="flex justify-between items-center py-2">
-              <span className="text-muted-foreground">Política de Cancelación</span>
-              <span className="font-medium">Visible al confirmar reserva</span>
+
+            <Separator />
+
+            <div className="space-y-1.5">
+              <Label>Política de Cancelación</Label>
+              <Textarea rows={4} value={config.cancellationPolicy} onChange={(e) => update("cancellationPolicy", e.target.value)} />
             </div>
           </CardContent>
         </Card>
 
         {/* Integrations */}
-        <div>
-          <h2 className="font-heading text-xl font-bold mb-4">Integraciones</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {integrations.map((int) => (
-              <Card key={int.name} className="border-border/50 shadow-sm">
-                <CardContent className="p-5">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 bg-muted rounded-lg">
-                      <int.icon className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-medium text-sm">{int.name}</h3>
-                        <Badge variant="secondary" className="text-xs">{int.status}</Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">{int.description}</p>
-                    </div>
+        <Card className="border-border/50 shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="font-heading text-lg flex items-center gap-2">
+              <Globe className="h-5 w-5 text-primary" /> Integraciones
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {INTEGRATION_META.map((int) => {
+              const state = config.integrations[int.key] || { connected: false, lastSync: "", config: {} };
+              return (
+                <div key={int.key} className="flex items-center gap-4 p-4 rounded-lg border border-border/50 bg-card hover:shadow-sm transition-shadow">
+                  <div className="p-2.5 rounded-lg bg-muted shrink-0">
+                    <int.icon className="h-5 w-5 text-muted-foreground" />
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-medium text-sm">{int.name}</h3>
+                      <Badge variant={state.connected ? "default" : "secondary"} className={state.connected ? "bg-primary/90 text-primary-foreground text-[10px]" : "text-[10px]"}>
+                        {state.connected ? "Conectado" : "Desconectado"}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">{int.description}</p>
+                    {state.connected && state.lastSync && (
+                      <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+                        <Clock className="h-3 w-3" /> Última sync: {state.lastSync}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Switch checked={state.connected} onCheckedChange={(v) => toggleIntegration(int.key, v)} />
+                    {int.fields.length > 0 && (
+                      <Button variant="outline" size="sm" onClick={() => openIntegrationModal(int.key)}>
+                        Configurar
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+
+        {/* Bottom Save */}
+        <div className="flex justify-end gap-2 pb-8">
+          <Button variant="outline" onClick={resetDefaults}>
+            <RotateCcw className="h-4 w-4 mr-1" /> Restaurar valores por defecto
+          </Button>
+          <Button onClick={saveAll} className="bg-primary hover:bg-primary/90">
+            <Save className="h-4 w-4 mr-1" /> Guardar todos los cambios
+          </Button>
         </div>
       </div>
+
+      {/* Integration Config Modal */}
+      <Dialog open={!!integrationModal} onOpenChange={(o) => !o && setIntegrationModal(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-heading">Configurar {meta?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {meta?.fields.map((f) => (
+              <div key={f.key} className="space-y-1.5">
+                <Label>{f.label}</Label>
+                <Input
+                  value={modalFields[f.key] || ""}
+                  onChange={(e) => setModalFields((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                  placeholder={f.label}
+                />
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIntegrationModal(null)}>Cancelar</Button>
+            <Button onClick={saveIntegrationModal} className="bg-primary hover:bg-primary/90">Guardar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
