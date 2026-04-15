@@ -3,7 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Plus, Edit, Sparkles, Clock, DollarSign } from "lucide-react";
-import React from "react";
+import React, { useState } from "react";
+import ServiceFormDialog, { type ServiceFormData } from "@/components/ServiceFormDialog";
 
 interface ServiceData {
   name: string;
@@ -257,6 +258,18 @@ function RichLine({ text }: { text: string }) {
 }
 
 export default function ServiciosPage() {
+  const [_, setRefresh] = useState(0);
+
+  const handleAddService = (data: ServiceFormData) => {
+    console.log("Nuevo servicio:", data);
+    setRefresh((r) => r + 1);
+  };
+
+  const handleEditService = (data: ServiceFormData) => {
+    console.log("Editar servicio:", data);
+    setRefresh((r) => r + 1);
+  };
+
   return (
     <AppLayout>
       <div className="space-y-8 animate-fade-in">
@@ -265,10 +278,15 @@ export default function ServiciosPage() {
             <h1 className="font-heading text-2xl lg:text-3xl font-bold">Catálogo de Servicios</h1>
             <p className="text-muted-foreground text-sm mt-1">Spa Lleras · COP (principal) · USD (secundaria)</p>
           </div>
-          <Button variant="spa" className="gap-2">
-            <Plus className="h-4 w-4" />
-            Nuevo Servicio
-          </Button>
+          <ServiceFormDialog
+            trigger={
+              <Button variant="spa" className="gap-2">
+                <Plus className="h-4 w-4" />
+                Nuevo Servicio
+              </Button>
+            }
+            onSave={handleAddService}
+          />
         </div>
 
         {categorias.map((cat) => (
@@ -284,9 +302,24 @@ export default function ServiciosPage() {
                   <CardContent className="p-5">
                     <div className="flex items-start justify-between mb-2">
                       <h3 className="font-heading font-semibold text-lg leading-tight pr-2">{s.name}</h3>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                        <Edit className="h-3.5 w-3.5" />
-                      </Button>
+                      <ServiceFormDialog
+                        service={{
+                          name: s.name,
+                          category: cat.id,
+                          description: s.description,
+                          is_addon: false,
+                          requires_two_therapists: false,
+                          uses_rooftop: false,
+                          notes: s.note ?? "",
+                          rates: [],
+                        }}
+                        trigger={
+                          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                            <Edit className="h-3.5 w-3.5" />
+                          </Button>
+                        }
+                        onSave={handleEditService}
+                      />
                     </div>
 
                     <p className="text-sm text-muted-foreground leading-relaxed mb-4">{s.description}</p>
