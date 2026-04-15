@@ -186,7 +186,8 @@ const rooms = [
   { value: "fuego", label: "Fuego (doble)" },
   { value: "yin-yang", label: "Yin and Yang (doble)" },
   { value: "africa", label: "Africa (doble)" },
-  { value: "consultorio", label: "El Consultorio" },
+  { value: "consultorio1", label: "Consultorio 1" },
+  { value: "consultorio2", label: "Consultorio 2" },
   { value: "rooftop", label: "Rooftop" },
 ];
 
