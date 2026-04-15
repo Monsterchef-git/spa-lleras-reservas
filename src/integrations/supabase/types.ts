@@ -14,6 +14,61 @@ export type Database = {
   }
   public: {
     Tables: {
+      booking_items: {
+        Row: {
+          booking_id: string
+          created_at: string
+          id: string
+          price_cop: number
+          price_usd: number
+          quantity: number
+          service_duration_id: string | null
+          service_id: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          id?: string
+          price_cop?: number
+          price_usd?: number
+          quantity?: number
+          service_duration_id?: string | null
+          service_id: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          id?: string
+          price_cop?: number
+          price_usd?: number
+          quantity?: number
+          service_duration_id?: string | null
+          service_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_items_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_items_service_duration_id_fkey"
+            columns: ["service_duration_id"]
+            isOneToOne: false
+            referencedRelation: "service_durations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_items_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           booking_date: string
