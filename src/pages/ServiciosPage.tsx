@@ -258,6 +258,18 @@ function RichLine({ text }: { text: string }) {
 }
 
 export default function ServiciosPage() {
+  const [_, setRefresh] = useState(0);
+
+  const handleAddService = (data: ServiceFormData) => {
+    console.log("Nuevo servicio:", data);
+    setRefresh((r) => r + 1);
+  };
+
+  const handleEditService = (data: ServiceFormData) => {
+    console.log("Editar servicio:", data);
+    setRefresh((r) => r + 1);
+  };
+
   return (
     <AppLayout>
       <div className="space-y-8 animate-fade-in">
@@ -266,10 +278,15 @@ export default function ServiciosPage() {
             <h1 className="font-heading text-2xl lg:text-3xl font-bold">Catálogo de Servicios</h1>
             <p className="text-muted-foreground text-sm mt-1">Spa Lleras · COP (principal) · USD (secundaria)</p>
           </div>
-          <Button variant="spa" className="gap-2">
-            <Plus className="h-4 w-4" />
-            Nuevo Servicio
-          </Button>
+          <ServiceFormDialog
+            trigger={
+              <Button variant="spa" className="gap-2">
+                <Plus className="h-4 w-4" />
+                Nuevo Servicio
+              </Button>
+            }
+            onSave={handleAddService}
+          />
         </div>
 
         {categorias.map((cat) => (
