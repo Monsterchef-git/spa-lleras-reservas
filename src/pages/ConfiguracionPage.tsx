@@ -73,11 +73,51 @@ const DEFAULT_CONFIG: SpaConfig = {
 };
 
 const INTEGRATION_META = [
-  { key: "gcal", name: "Google Calendar", description: "Sincronización bidireccional de reservas con Google Calendar.", icon: Calendar, fields: [{ key: "calendarId", label: "Calendar ID" }, { key: "apiKey", label: "API Key" }] },
-  { key: "whatsapp", name: "WhatsApp Business API", description: "Webhook vía Make.com para parsear mensajes y crear reservas.", icon: MessageSquare, fields: [{ key: "webhookUrl", label: "Webhook URL" }, { key: "phoneNumber", label: "Número de teléfono" }, { key: "apiToken", label: "API Token" }] },
-  { key: "email", name: "Email / Gmail API", description: "Integración con Gmail para reservas por correo electrónico.", icon: Mail, fields: [{ key: "smtpHost", label: "SMTP Host" }, { key: "smtpPort", label: "SMTP Port" }, { key: "smtpUser", label: "Usuario" }, { key: "smtpPass", label: "Contraseña" }] },
-  { key: "csv", name: "Importar CSV/Excel", description: "Importar reservas antiguas desde archivos CSV o Excel.", icon: Upload, fields: [] },
-  { key: "notifications", name: "Notificaciones Automáticas", description: "Recordatorios automáticos vía email y WhatsApp.", icon: Bell, fields: [{ key: "emailEnabled", label: "Email habilitado (true/false)" }, { key: "whatsappEnabled", label: "WhatsApp habilitado (true/false)" }] },
+  {
+    key: "gcal", name: "Google Calendar", icon: Calendar,
+    description: "Sincronización bidireccional de reservas con Google Calendar.",
+    modalDescription: "Conecta tu cuenta de Google Calendar para sincronizar reservas automáticamente. Necesitas crear un proyecto en Google Cloud Console y habilitar la Calendar API.",
+    fields: [
+      { key: "calendarId", label: "Calendar ID", placeholder: "ejemplo@group.calendar.google.com", hint: "ID del calendario donde se crearán los eventos", type: "text" },
+      { key: "apiKey", label: "API Key", placeholder: "AIzaSy...", hint: "Clave de API de Google Cloud Console", type: "password" },
+    ],
+  },
+  {
+    key: "whatsapp", name: "WhatsApp Business API", icon: MessageSquare,
+    description: "Webhook vía Make.com para parsear mensajes y crear reservas.",
+    modalDescription: "Configura la integración con WhatsApp Business API para recibir y responder mensajes de reservas automáticamente a través de Make.com o n8n.",
+    fields: [
+      { key: "webhookUrl", label: "Webhook URL", placeholder: "https://hook.make.com/abc123...", hint: "URL del webhook de Make.com o n8n que recibe los mensajes", type: "url" },
+      { key: "phoneNumber", label: "Número de teléfono", placeholder: "+57 300 123 4567", hint: "Número de WhatsApp Business registrado", type: "tel" },
+      { key: "apiToken", label: "API Token", placeholder: "whsec_...", hint: "Token de autenticación de la API de WhatsApp", type: "password" },
+    ],
+  },
+  {
+    key: "email", name: "Email / Gmail API", icon: Mail,
+    description: "Integración con Gmail para reservas por correo electrónico.",
+    modalDescription: "Configura el servidor SMTP para enviar confirmaciones, recordatorios y notificaciones de reservas por correo electrónico.",
+    fields: [
+      { key: "smtpHost", label: "SMTP Host", placeholder: "smtp.gmail.com", hint: "Servidor de correo saliente", type: "text" },
+      { key: "smtpPort", label: "SMTP Port", placeholder: "587", hint: "Puerto del servidor (587 para TLS, 465 para SSL)", type: "text" },
+      { key: "smtpUser", label: "Usuario / Email", placeholder: "reservas@spalleras.com", hint: "Dirección de email para enviar correos", type: "email" },
+      { key: "smtpPass", label: "Contraseña de aplicación", placeholder: "••••••••", hint: "Contraseña de app de Gmail o del servidor SMTP", type: "password" },
+    ],
+  },
+  {
+    key: "csv", name: "Importar CSV/Excel", icon: Upload,
+    description: "Importar reservas antiguas desde archivos CSV o Excel.",
+    modalDescription: "Sube un archivo CSV o Excel para importar reservas históricas al sistema.",
+    fields: [],
+  },
+  {
+    key: "notifications", name: "Notificaciones Automáticas", icon: Bell,
+    description: "Recordatorios automáticos vía email y WhatsApp.",
+    modalDescription: "Configura los canales de notificación para enviar recordatorios automáticos a los clientes antes de su cita.",
+    fields: [
+      { key: "emailEnabled", label: "Notificaciones por Email", placeholder: "", hint: "Enviar recordatorios por correo electrónico", type: "toggle" },
+      { key: "whatsappEnabled", label: "Notificaciones por WhatsApp", placeholder: "", hint: "Enviar recordatorios por WhatsApp", type: "toggle" },
+    ],
+  },
 ];
 
 function loadConfig(): SpaConfig {
@@ -352,25 +392,57 @@ export default function ConfiguracionPage() {
 
       {/* Integration Config Modal */}
       <Dialog open={!!integrationModal} onOpenChange={(o) => !o && setIntegrationModal(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className="font-heading">Configurar {meta?.name}</DialogTitle>
+            <div className="flex items-center gap-3">
+              {meta && <div className="p-2.5 rounded-lg bg-primary/10"><meta.icon className="h-5 w-5 text-primary" /></div>}
+              <div>
+                <DialogTitle className="font-heading text-lg">Configurar {meta?.name}</DialogTitle>
+                <p className="text-xs text-muted-foreground mt-1">{meta?.modalDescription}</p>
+              </div>
+            </div>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <Separator />
+          <div className="space-y-5 py-1">
             {meta?.fields.map((f) => (
               <div key={f.key} className="space-y-1.5">
-                <Label>{f.label}</Label>
-                <Input
-                  value={modalFields[f.key] || ""}
-                  onChange={(e) => setModalFields((prev) => ({ ...prev, [f.key]: e.target.value }))}
-                  placeholder={f.label}
-                />
+                <Label className="text-sm font-medium">{f.label}</Label>
+                {f.type === "toggle" ? (
+                  <div className="flex items-center justify-between rounded-lg border border-border/50 p-3">
+                    <p className="text-xs text-muted-foreground">{f.hint}</p>
+                    <Switch
+                      checked={modalFields[f.key] === "true"}
+                      onCheckedChange={(v) => setModalFields((prev) => ({ ...prev, [f.key]: String(v) }))}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <Input
+                      type={f.type || "text"}
+                      value={modalFields[f.key] || ""}
+                      onChange={(e) => setModalFields((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                      placeholder={f.placeholder}
+                      className="font-mono text-sm"
+                    />
+                    {f.hint && <p className="text-[11px] text-muted-foreground">{f.hint}</p>}
+                  </>
+                )}
               </div>
             ))}
+            {meta?.fields.length === 0 && (
+              <div className="text-center py-6 text-muted-foreground">
+                <Upload className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Arrastra un archivo CSV o Excel aquí, o haz clic para seleccionar</p>
+                <Button variant="outline" size="sm" className="mt-3">Seleccionar archivo</Button>
+              </div>
+            )}
           </div>
+          <Separator />
           <DialogFooter>
             <Button variant="outline" onClick={() => setIntegrationModal(null)}>Cancelar</Button>
-            <Button onClick={saveIntegrationModal} className="bg-primary hover:bg-primary/90">Guardar</Button>
+            <Button onClick={saveIntegrationModal} className="bg-primary hover:bg-primary/90">
+              <Save className="h-4 w-4 mr-1" /> Guardar configuración
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
