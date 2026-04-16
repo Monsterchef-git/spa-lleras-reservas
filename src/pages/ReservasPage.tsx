@@ -52,6 +52,8 @@ export default function ReservasPage() {
   const [sourceFilter, setSourceFilter] = useState("Todas");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [editBooking, setEditBooking] = useState<Booking | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
 
   const hasActiveFilters = statusFilter !== "Todas" || sourceFilter !== "Todas" || dateFrom || dateTo;
 
@@ -202,7 +204,7 @@ export default function ReservasPage() {
                     </tr>
                   )}
                   {filtered.map((b) => (
-                    <tr key={b.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
+                    <tr key={b.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => { setEditBooking(b); setEditOpen(true); }}>
                       <td className="py-3 px-4">
                         <div className="font-medium">{b.clients?.name ?? "—"}</div>
                         <div className="text-xs text-muted-foreground">{b.clients?.phone ?? ""}</div>
@@ -238,26 +240,31 @@ export default function ReservasPage() {
                           </SelectContent>
                         </Select>
                       </td>
-                      <td className="py-3 px-4">
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>¿Eliminar reserva?</AlertDialogTitle>
-                              <AlertDialogDescription>Esta acción no se puede deshacer.</AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDelete(b.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                Eliminar
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                      <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" onClick={() => { setEditBooking(b); setEditOpen(true); }}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>¿Eliminar reserva?</AlertDialogTitle>
+                                <AlertDialogDescription>Esta acción no se puede deshacer.</AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(b.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                  Eliminar
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </td>
                     </tr>
                   ))}
