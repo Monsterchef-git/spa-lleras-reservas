@@ -47,7 +47,7 @@ export default function BookingFormDialog() {
   const { data: resources } = useResources();
   const { data: clients } = useClients();
   const createBooking = useCreateBooking();
-
+  const checkAvailability = useCheckAvailability();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [clientId, setClientId] = useState("");
   const [nationality, setNationality] = useState("");
@@ -59,6 +59,7 @@ export default function BookingFormDialog() {
   const [resourceId, setResourceId] = useState("");
   const [source, setSource] = useState("web");
   const [notes, setNotes] = useState("");
+  const [conflicts, setConflicts] = useState<string[]>([]);
 
   const activeServices = useMemo(() => (services ?? []).filter((s) => s.is_active), [services]);
   const activeTherapists = useMemo(() => (therapists ?? []).filter((t) => t.is_available), [therapists]);
