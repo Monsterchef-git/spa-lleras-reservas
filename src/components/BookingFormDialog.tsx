@@ -130,7 +130,21 @@ export default function BookingFormDialog() {
     setResourceId("");
     setSource("web");
     setNotes("");
+    setConflicts([]);
   };
+
+  // Check availability
+  useEffect(() => {
+    if (!date || !startTime || totalMinutes === 0) { setConflicts([]); return; }
+    const endTime = calculateEndTime(startTime, totalMinutes);
+    if (!endTime) return;
+    checkAvailability({
+      date, startTime, endTime,
+      therapistId: therapistId || null,
+      secondTherapistId: secondTherapistId || null,
+      resourceId: resourceId || null,
+    }).then(setConflicts);
+  }, [date, startTime, totalMinutes, therapistId, secondTherapistId, resourceId]);
 
   const formatDuration = (mins: number) => {
     if (mins === 0) return "—";
