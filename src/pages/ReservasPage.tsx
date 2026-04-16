@@ -273,6 +273,7 @@ export default function ReservasPage() {
             </div>
           </CardContent>
         </Card>
+        <BookingEditDialog booking={editBooking} open={editOpen} onOpenChange={setEditOpen} />
       </div>
     </AppLayout>
   );
