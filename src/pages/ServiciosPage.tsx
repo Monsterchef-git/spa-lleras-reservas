@@ -20,17 +20,30 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const categoryLabels: Record<string, string> = {
+  Masajes: "Masajes",
+  Faciales: "Faciales",
+  Complementos: "Complementos",
+  Experiencias: "Experiencias",
+  Paquetes: "Paquetes de Día de Spa",
+  Tratamientos: "Tratamientos",
+  // legacy keys
   massages: "Masajes",
   facials: "Faciales",
-  "massage-addons": "Complementos de masaje",
+  "massage-addons": "Complementos",
   "express-massage": "Masaje Exprés",
-  packages: "Paquetes de día de spa",
+  packages: "Paquetes de Día de Spa",
 };
 
 const categoryColors: Record<string, string> = {
+  Masajes: "bg-primary/10 text-primary border-primary/20",
+  Faciales: "bg-accent/10 text-accent border-accent/20",
+  Complementos: "bg-teal-100 text-teal-800 border-teal-200",
+  Experiencias: "bg-amber-100 text-amber-800 border-amber-200",
+  Paquetes: "bg-purple-100 text-purple-800 border-purple-200",
+  Tratamientos: "bg-blue-100 text-blue-800 border-blue-200",
   massages: "bg-primary/10 text-primary border-primary/20",
   facials: "bg-accent/10 text-accent border-accent/20",
-  "massage-addons": "bg-teal-light text-teal border-teal/20",
+  "massage-addons": "bg-teal-100 text-teal-800 border-teal-200",
   "express-massage": "bg-blue-100 text-blue-800 border-blue-200",
   packages: "bg-purple-100 text-purple-800 border-purple-200",
 };
