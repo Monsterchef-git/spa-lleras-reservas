@@ -179,6 +179,10 @@ export default function BookingFormDialog() {
       toast({ title: "Fecha requerida", description: "Selecciona fecha y hora.", variant: "destructive" });
       return;
     }
+    if (conflicts.length > 0) {
+      toast({ title: "Conflictos de horario", description: "Resuelve los conflictos antes de guardar.", variant: "destructive" });
+      return;
+    }
 
     const endTime = calculateEndTime(startTime, totalMinutes);
 
@@ -233,6 +237,19 @@ export default function BookingFormDialog() {
           <DialogTitle className="font-heading text-xl">Nueva Reserva</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-5 mt-2">
+          {/* Conflict warnings */}
+          {conflicts.length > 0 && (
+            <Card className="border-destructive/50 bg-destructive/5">
+              <CardContent className="p-3 space-y-1">
+                <p className="text-sm font-semibold text-destructive flex items-center gap-1.5">
+                  <ShieldAlert className="h-4 w-4" /> Conflictos de horario
+                </p>
+                {conflicts.map((c, i) => (
+                  <p key={i} className="text-xs text-destructive/80">• {c}</p>
+                ))}
+              </CardContent>
+            </Card>
+          )}
           {/* Client selector */}
           <div className="space-y-1.5">
             <Label>Cliente</Label>
@@ -540,8 +557,8 @@ export default function BookingFormDialog() {
 
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button type="submit" variant="spa" className="flex-1" disabled={createBooking.isPending}>
-              {createBooking.isPending ? "Creando..." : "Crear Reserva"}
+            <Button type="submit" variant="spa" className="flex-1" disabled={createBooking.isPending || conflicts.length > 0}>
+              {createBooking.isPending ? "Creando..." : conflicts.length > 0 ? "Conflictos pendientes" : "Crear Reserva"}
             </Button>
           </div>
         </form>
