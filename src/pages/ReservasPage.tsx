@@ -2,11 +2,12 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, X, Loader2, Trash2 } from "lucide-react";
+import { Search, Filter, X, Loader2, Trash2, Pencil } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import BookingFormDialog from "@/components/BookingFormDialog";
+import BookingEditDialog from "@/components/BookingEditDialog";
 import { useBookings, useUpdateBookingStatus, useDeleteBooking, type Booking } from "@/hooks/useBookings";
 import { useToast } from "@/hooks/use-toast";
 import {

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,13 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Globe, Languages, DollarSign, Trash2, ShoppingCart, Sparkles, Clock, AlertTriangle } from "lucide-react";
+import { Plus, Globe, Languages, DollarSign, Trash2, ShoppingCart, Sparkles, Clock, AlertTriangle, ShieldAlert } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useServices, type ServiceWithDurations } from "@/hooks/useServices";
 import { useTherapists } from "@/hooks/useTherapists";
 import { useResources } from "@/hooks/useResources";
 import { useClients } from "@/hooks/useClients";
-import { useCreateBooking } from "@/hooks/useBookings";
+import { useCreateBooking, useCheckAvailability } from "@/hooks/useBookings";
 
 interface CartItem {
   uid: string;
