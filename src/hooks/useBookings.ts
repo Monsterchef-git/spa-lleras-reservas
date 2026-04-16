@@ -72,6 +72,81 @@ export function useUpdateBookingStatus() {
   });
 }
 
+export function useUpdateBooking() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      id: string;
+      booking: Partial<TablesInsert<"bookings">>;
+      items: Omit<TablesInsert<"booking_items">, "booking_id">[];
+    }) => {
+      const { error: bErr } = await supabase
+        .from("bookings")
+        .update(input.booking)
+        .eq("id", input.id);
+      if (bErr) throw bErr;
+      // Replace items
+      const { error: delErr } = await supabase
+        .from("booking_items")
+        .delete()
+        .eq("booking_id", input.id);
+      if (delErr) throw delErr;
+      if (input.items.length > 0) {
+        const rows = input.items.map((item) => ({ ...item, booking_id: input.id }));
+        const { error: iErr } = await supabase.from("booking_items").insert(rows);
+        if (iErr) throw iErr;
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["bookings"] }),
+  });
+}
+
+export function useCheckAvailability() {
+  return async (input: {
+    date: string;
+    startTime: string;
+    endTime: string;
+    therapistId?: string | null;
+    secondTherapistId?: string | null;
+    resourceId?: string | null;
+    excludeBookingId?: string;
+  }): Promise<string[]> => {
+    const conflicts: string[] = [];
+    if (!input.date || !input.startTime || !input.endTime) return conflicts;
+
+    let query = supabase
+      .from("bookings")
+      .select("id, start_time, end_time, therapist_id, second_therapist_id, resource_id, therapist:therapists!bookings_therapist_id_fkey(name), resources(name)")
+      .eq("booking_date", input.date)
+      .in("status", ["pendiente", "confirmada"]);
+
+    if (input.excludeBookingId) {
+      query = query.neq("id", input.excludeBookingId);
+    }
+
+    const { data: existing } = await query;
+    if (!existing) return conflicts;
+
+    for (const b of existing) {
+      const overlapTime = b.start_time < input.endTime && b.end_time > input.startTime;
+      if (!overlapTime) continue;
+
+      if (input.therapistId && (b.therapist_id === input.therapistId || b.second_therapist_id === input.therapistId)) {
+        const name = (b as any).therapist?.name ?? "Terapeuta";
+        conflicts.push(`${name} ya tiene una reserva de ${b.start_time.slice(0,5)} a ${b.end_time.slice(0,5)}`);
+      }
+      if (input.secondTherapistId && (b.therapist_id === input.secondTherapistId || b.second_therapist_id === input.secondTherapistId)) {
+        conflicts.push(`El segundo terapeuta ya tiene una reserva de ${b.start_time.slice(0,5)} a ${b.end_time.slice(0,5)}`);
+      }
+      if (input.resourceId && b.resource_id === input.resourceId) {
+        const name = (b as any).resources?.name ?? "Recurso";
+        conflicts.push(`${name} está ocupado de ${b.start_time.slice(0,5)} a ${b.end_time.slice(0,5)}`);
+      }
+    }
+    return conflicts;
+  };
+}
+
 export function useDeleteBooking() {
   const qc = useQueryClient();
   return useMutation({

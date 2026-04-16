@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,13 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Globe, Languages, DollarSign, Trash2, ShoppingCart, Sparkles, Clock, AlertTriangle, ShieldAlert } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Plus, Globe, Languages, DollarSign, Trash2, ShoppingCart, Clock, AlertTriangle, ShieldAlert } from "lucide-react";
+import { toast } from "sonner";
 import { useServices, type ServiceWithDurations } from "@/hooks/useServices";
 import { useTherapists } from "@/hooks/useTherapists";
 import { useResources } from "@/hooks/useResources";
 import { useClients } from "@/hooks/useClients";
-import { useCreateBooking, useCheckAvailability } from "@/hooks/useBookings";
+import { useUpdateBooking, useCheckAvailability, type Booking } from "@/hooks/useBookings";
 
 interface CartItem {
   uid: string;
@@ -30,24 +30,34 @@ const sources = [
   { value: "web", label: "Web" },
 ];
 
+const statusOptions = [
+  { value: "pendiente", label: "Pendiente" },
+  { value: "confirmada", label: "Confirmada" },
+  { value: "cancelada", label: "Cancelada" },
+  { value: "completada", label: "Completada" },
+];
+
 function formatCOP(n: number) {
   return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0 }).format(n);
 }
 
-let uidCounter = 0;
-function nextUid() {
-  return `ci-${++uidCounter}-${Date.now()}`;
+let uidCounter = 1000;
+function nextUid() { return `ei-${++uidCounter}-${Date.now()}`; }
+
+interface Props {
+  booking: Booking | null;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
 }
 
-export default function BookingFormDialog() {
-  const [open, setOpen] = useState(false);
-  const { toast } = useToast();
+export default function BookingEditDialog({ booking, open, onOpenChange }: Props) {
   const { data: services } = useServices();
   const { data: therapists } = useTherapists();
   const { data: resources } = useResources();
   const { data: clients } = useClients();
-  const createBooking = useCreateBooking();
+  const updateBooking = useUpdateBooking();
   const checkAvailability = useCheckAvailability();
+
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [clientId, setClientId] = useState("");
   const [nationality, setNationality] = useState("");
@@ -58,11 +68,49 @@ export default function BookingFormDialog() {
   const [secondTherapistId, setSecondTherapistId] = useState("");
   const [resourceId, setResourceId] = useState("");
   const [source, setSource] = useState("web");
+  const [status, setStatus] = useState("pendiente");
   const [notes, setNotes] = useState("");
   const [conflicts, setConflicts] = useState<string[]>([]);
+  const [checking, setChecking] = useState(false);
 
   const activeServices = useMemo(() => (services ?? []).filter((s) => s.is_active), [services]);
   const activeTherapists = useMemo(() => (therapists ?? []).filter((t) => t.is_available), [therapists]);
+
+  // Populate form when booking changes
+  useEffect(() => {
+    if (!booking) return;
+    setClientId(booking.client_id ?? "");
+    setNationality(booking.nationality ?? "");
+    setLanguage(booking.preferred_language ?? "en");
+    setDate(booking.booking_date);
+    setStartTime(booking.start_time?.slice(0, 5) ?? "");
+    setTherapistId(booking.therapist_id ?? "");
+    setSecondTherapistId(booking.second_therapist_id ?? "");
+    setResourceId(booking.resource_id ?? "");
+    setSource(booking.source ?? "web");
+    setStatus(booking.status ?? "pendiente");
+    setNotes(booking.notes ?? "");
+    setConflicts([]);
+
+    // Build cart from booking_items or fallback to single service
+    if (booking.booking_items && booking.booking_items.length > 0) {
+      setCartItems(booking.booking_items.map((bi) => ({
+        uid: nextUid(),
+        serviceId: bi.service_id,
+        durationId: bi.service_duration_id ?? "",
+        quantity: bi.quantity,
+      })));
+    } else if (booking.service_id) {
+      setCartItems([{
+        uid: nextUid(),
+        serviceId: booking.service_id,
+        durationId: booking.service_duration_id ?? "",
+        quantity: 1,
+      }]);
+    } else {
+      setCartItems([]);
+    }
+  }, [booking]);
 
   const addCartItem = useCallback(() => {
     setCartItems((prev) => [...prev, { uid: nextUid(), serviceId: "", durationId: "", quantity: 1 }]);
@@ -96,56 +144,6 @@ export default function BookingFormDialog() {
     return { totalMinutes: mins, totalCOP: cop, totalUSD: usd, requiresTwoTherapists: needsTwo };
   }, [cartItems, activeServices]);
 
-  // Addon suggestions
-  const suggestedAddons = useMemo(() => {
-    const cartServiceIds = new Set(cartItems.map((i) => i.serviceId));
-    const hasMainService = cartItems.some((i) => {
-      const svc = activeServices.find((s) => s.id === i.serviceId);
-      return svc && !svc.is_addon;
-    });
-    if (!hasMainService) return [];
-    return activeServices
-      .filter((s) => s.is_addon && !cartServiceIds.has(s.id) && s.service_durations.length > 0)
-      .slice(0, 4);
-  }, [cartItems, activeServices]);
-
-  const addSuggestedAddon = useCallback((svc: ServiceWithDurations) => {
-    setCartItems((prev) => [...prev, {
-      uid: nextUid(),
-      serviceId: svc.id,
-      durationId: svc.service_durations[0]?.id ?? "",
-      quantity: 1,
-    }]);
-  }, []);
-
-  const resetForm = () => {
-    setCartItems([]);
-    setClientId("");
-    setNationality("");
-    setLanguage("en");
-    setDate("");
-    setStartTime("");
-    setTherapistId("");
-    setSecondTherapistId("");
-    setResourceId("");
-    setSource("web");
-    setNotes("");
-    setConflicts([]);
-  };
-
-  // Check availability
-  useEffect(() => {
-    if (!date || !startTime || totalMinutes === 0) { setConflicts([]); return; }
-    const endTime = calculateEndTime(startTime, totalMinutes);
-    if (!endTime) return;
-    checkAvailability({
-      date, startTime, endTime,
-      therapistId: therapistId || null,
-      secondTherapistId: secondTherapistId || null,
-      resourceId: resourceId || null,
-    }).then(setConflicts);
-  }, [date, startTime, totalMinutes, therapistId, secondTherapistId, resourceId]);
-
   const formatDuration = (mins: number) => {
     if (mins === 0) return "—";
     const h = Math.floor(mins / 60);
@@ -164,30 +162,52 @@ export default function BookingFormDialog() {
     return `${String(eh).padStart(2, "0")}:${String(em).padStart(2, "0")}`;
   };
 
+  // Check availability whenever relevant fields change
+  useEffect(() => {
+    if (!date || !startTime || totalMinutes === 0 || !booking) return;
+    const endTime = calculateEndTime(startTime, totalMinutes);
+    if (!endTime) return;
+
+    setChecking(true);
+    checkAvailability({
+      date,
+      startTime,
+      endTime,
+      therapistId: therapistId || null,
+      secondTherapistId: secondTherapistId || null,
+      resourceId: resourceId || null,
+      excludeBookingId: booking.id,
+    }).then((c) => {
+      setConflicts(c);
+      setChecking(false);
+    });
+  }, [date, startTime, totalMinutes, therapistId, secondTherapistId, resourceId]);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!booking) return;
     if (cartItems.length === 0) {
-      toast({ title: "Sin servicios", description: "Agrega al menos un servicio.", variant: "destructive" });
+      toast.error("Agrega al menos un servicio.");
       return;
     }
-    const incomplete = cartItems.some((i) => !i.serviceId || !i.durationId);
-    if (incomplete) {
-      toast({ title: "Servicios incompletos", description: "Selecciona tarifa para todos.", variant: "destructive" });
+    if (cartItems.some((i) => !i.serviceId || !i.durationId)) {
+      toast.error("Selecciona tarifa para todos los servicios.");
       return;
     }
     if (!date || !startTime) {
-      toast({ title: "Fecha requerida", description: "Selecciona fecha y hora.", variant: "destructive" });
+      toast.error("Selecciona fecha y hora.");
       return;
     }
     if (conflicts.length > 0) {
-      toast({ title: "Conflictos de horario", description: "Resuelve los conflictos antes de guardar.", variant: "destructive" });
+      toast.error("Resuelve los conflictos de horario antes de guardar.");
       return;
     }
 
     const endTime = calculateEndTime(startTime, totalMinutes);
 
     try {
-      await createBooking.mutateAsync({
+      await updateBooking.mutateAsync({
+        id: booking.id,
         booking: {
           client_id: clientId || null,
           booking_date: date,
@@ -201,6 +221,7 @@ export default function BookingFormDialog() {
           nationality: nationality || null,
           preferred_language: language,
           source: source as any,
+          status: status as any,
           notes: notes || null,
           service_id: cartItems.length === 1 ? cartItems[0].serviceId : null,
           service_duration_id: cartItems.length === 1 ? cartItems[0].durationId : null,
@@ -216,25 +237,18 @@ export default function BookingFormDialog() {
           };
         }),
       });
-      toast({ title: "Reserva creada", description: `${cartItems.length} servicio(s) — ${formatCOP(totalCOP)}` });
-      setOpen(false);
-      resetForm();
+      toast.success("Reserva actualizada correctamente");
+      onOpenChange(false);
     } catch (err: any) {
-      toast({ title: "Error al crear reserva", description: err.message, variant: "destructive" });
+      toast.error(err.message);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
-      <DialogTrigger asChild>
-        <Button variant="spa" className="gap-2">
-          <Plus className="h-4 w-4" />
-          Nueva Reserva
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-heading text-xl">Nueva Reserva</DialogTitle>
+          <DialogTitle className="font-heading text-xl">Editar Reserva</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-5 mt-2">
           {/* Conflict warnings */}
@@ -250,7 +264,21 @@ export default function BookingFormDialog() {
               </CardContent>
             </Card>
           )}
-          {/* Client selector */}
+
+          {/* Status */}
+          <div className="space-y-1.5">
+            <Label>Estado</Label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {statusOptions.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Client */}
           <div className="space-y-1.5">
             <Label>Cliente</Label>
             <Select value={clientId} onValueChange={setClientId}>
@@ -267,13 +295,13 @@ export default function BookingFormDialog() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="flex items-center gap-1.5">
-                <Globe className="h-3.5 w-3.5 text-primary" /> País / Nacionalidad
+                <Globe className="h-3.5 w-3.5 text-primary" /> Nacionalidad
               </Label>
               <Input value={nationality} onChange={(e) => setNationality(e.target.value)} placeholder="Colombia, USA..." />
             </div>
             <div className="space-y-1.5">
               <Label className="flex items-center gap-1.5">
-                <Languages className="h-3.5 w-3.5 text-primary" /> Idioma Preferido
+                <Languages className="h-3.5 w-3.5 text-primary" /> Idioma
               </Label>
               <Select value={language} onValueChange={setLanguage}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -285,12 +313,11 @@ export default function BookingFormDialog() {
             </div>
           </div>
 
-          {/* ============ CART ============ */}
+          {/* Cart */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label className="flex items-center gap-2 text-base font-semibold">
-                <ShoppingCart className="h-4 w-4 text-primary" />
-                Servicios seleccionados
+                <ShoppingCart className="h-4 w-4 text-primary" /> Servicios
               </Label>
               <Badge variant="secondary" className="text-xs">{cartItems.length} servicio(s)</Badge>
             </div>
@@ -305,80 +332,42 @@ export default function BookingFormDialog() {
                       <div className="flex gap-2">
                         <div className="flex-1 space-y-1">
                           <label className="text-xs font-medium text-muted-foreground">Servicio</label>
-                          <Select
-                            value={item.serviceId}
-                            onValueChange={(v) => updateCartItem(item.uid, { serviceId: v, durationId: "" })}
-                          >
-                            <SelectTrigger className="h-9 text-sm">
-                              <SelectValue placeholder="Seleccionar servicio..." />
-                            </SelectTrigger>
+                          <Select value={item.serviceId} onValueChange={(v) => updateCartItem(item.uid, { serviceId: v, durationId: "" })}>
+                            <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
                             <SelectContent>
                               {activeServices.map((s) => (
-                                <SelectItem key={s.id} value={s.id}>
-                                  {s.is_addon && "⭐ "}{s.name}
-                                </SelectItem>
+                                <SelectItem key={s.id} value={s.id}>{s.is_addon && "⭐ "}{s.name}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="mt-5 h-9 w-9 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => removeCartItem(item.uid)}
-                        >
+                        <Button type="button" variant="ghost" size="icon" className="mt-5 h-9 w-9 text-destructive" onClick={() => removeCartItem(item.uid)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-
                       {svc && svc.service_durations.length > 0 && (
                         <div className="grid grid-cols-[1fr_80px] gap-2">
                           <div className="space-y-1">
                             <label className="text-xs font-medium text-muted-foreground">Duración / Tarifa</label>
-                            <Select
-                              value={item.durationId}
-                              onValueChange={(v) => updateCartItem(item.uid, { durationId: v })}
-                            >
-                              <SelectTrigger className="h-9 text-sm">
-                                <SelectValue placeholder="Tarifa..." />
-                              </SelectTrigger>
+                            <Select value={item.durationId} onValueChange={(v) => updateCartItem(item.uid, { durationId: v })}>
+                              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Tarifa..." /></SelectTrigger>
                               <SelectContent>
                                 {svc.service_durations.map((d) => (
-                                  <SelectItem key={d.id} value={d.id}>
-                                    {d.duration_minutes} min — {formatCOP(d.price_cop)} | ${d.price_usd}
-                                  </SelectItem>
+                                  <SelectItem key={d.id} value={d.id}>{d.duration_minutes} min — {formatCOP(d.price_cop)} | ${d.price_usd}</SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
                           </div>
                           <div className="space-y-1">
                             <label className="text-xs font-medium text-muted-foreground">Cant.</label>
-                            <Input
-                              type="number"
-                              min={1}
-                              max={10}
-                              value={item.quantity}
-                              onChange={(e) => updateCartItem(item.uid, { quantity: Math.max(1, Number(e.target.value)) })}
-                              className="h-9 text-sm text-center"
-                            />
+                            <Input type="number" min={1} max={10} value={item.quantity} onChange={(e) => updateCartItem(item.uid, { quantity: Math.max(1, Number(e.target.value)) })} className="h-9 text-sm text-center" />
                           </div>
                         </div>
                       )}
-
                       {dur && (
                         <div className="flex justify-between text-xs text-muted-foreground pt-1 border-t border-border/30">
                           <span>{dur.duration_minutes * item.quantity} min</span>
-                          <span className="font-medium text-foreground">
-                            {formatCOP(dur.price_cop * item.quantity)} | ${dur.price_usd * item.quantity} USD
-                          </span>
-                        </div>
-                      )}
-
-                      {svc?.requires_two_therapists && (
-                        <div className="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
-                          <AlertTriangle className="h-3.5 w-3.5" />
-                          Requiere dos terapeutas
+                          <span className="font-medium text-foreground">{formatCOP(dur.price_cop * item.quantity)} | ${dur.price_usd * item.quantity} USD</span>
                         </div>
                       )}
                     </CardContent>
@@ -387,72 +376,27 @@ export default function BookingFormDialog() {
               })}
             </div>
 
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full border-dashed border-2 border-primary/30 text-primary hover:bg-primary/5 gap-2 h-11"
-              onClick={addCartItem}
-            >
-              <Plus className="h-4 w-4" />
-              Agregar servicio
+            <Button type="button" variant="outline" className="w-full border-dashed border-2 border-primary/30 text-primary hover:bg-primary/5 gap-2 h-11" onClick={addCartItem}>
+              <Plus className="h-4 w-4" /> Agregar servicio
             </Button>
 
-            {/* Suggested add-ons */}
-            {suggestedAddons.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5 text-accent" />
-                  Sugerencias de add-ons
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {suggestedAddons.map((svc) => (
-                    <Button
-                      key={svc.id}
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="text-xs h-7 gap-1 border-accent/40 text-accent-foreground hover:bg-accent/10"
-                      onClick={() => addSuggestedAddon(svc)}
-                    >
-                      <Plus className="h-3 w-3" />
-                      {svc.name}
-                      {svc.service_durations[0] ? ` — ${formatCOP(svc.service_durations[0].price_cop)}` : ""}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Totals */}
             {cartItems.length > 0 && (
               <Card className="border-primary/20 bg-primary/5">
                 <CardContent className="p-3">
                   <div className="grid grid-cols-3 gap-3 text-center">
                     <div>
-                      <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
-                        <Clock className="h-3 w-3" /> Tiempo total
-                      </p>
+                      <p className="text-xs text-muted-foreground flex items-center justify-center gap-1"><Clock className="h-3 w-3" /> Tiempo</p>
                       <p className="font-heading font-bold text-lg">{formatDuration(totalMinutes)}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
-                        <DollarSign className="h-3 w-3" /> Total COP
-                      </p>
+                      <p className="text-xs text-muted-foreground flex items-center justify-center gap-1"><DollarSign className="h-3 w-3" /> COP</p>
                       <p className="font-heading font-bold text-lg">{formatCOP(totalCOP)}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
-                        <DollarSign className="h-3 w-3" /> Total USD
-                      </p>
+                      <p className="text-xs text-muted-foreground flex items-center justify-center gap-1"><DollarSign className="h-3 w-3" /> USD</p>
                       <p className="font-heading font-bold text-lg">${totalUSD}</p>
                     </div>
                   </div>
-                  {requiresTwoTherapists && (
-                    <div className="flex items-center gap-1.5 text-xs text-amber-600 mt-2 justify-center">
-                      <AlertTriangle className="h-3.5 w-3.5" />
-                      Esta reserva requiere al menos dos terapeutas
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             )}
@@ -506,11 +450,10 @@ export default function BookingFormDialog() {
           {requiresTwoTherapists && (
             <div className="space-y-1.5">
               <Label className="flex items-center gap-1.5">
-                <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-                Segundo Terapeuta
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-500" /> Segundo Terapeuta
               </Label>
               <Select value={secondTherapistId} onValueChange={setSecondTherapistId}>
-                <SelectTrigger><SelectValue placeholder="Seleccionar segundo terapeuta..." /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
                 <SelectContent>
                   {activeTherapists.filter((t) => t.id !== therapistId).map((t) => (
                     <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
@@ -519,22 +462,6 @@ export default function BookingFormDialog() {
               </Select>
             </div>
           )}
-
-          {/* Price totals (readonly) */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="flex items-center gap-1.5">
-                <DollarSign className="h-3.5 w-3.5 text-primary" /> Precio COP
-              </Label>
-              <Input value={totalCOP > 0 ? formatCOP(totalCOP) : ""} placeholder="Se calcula automáticamente" readOnly className="bg-muted/50 font-semibold" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="flex items-center gap-1.5">
-                <DollarSign className="h-3.5 w-3.5 text-primary" /> Precio USD
-              </Label>
-              <Input value={totalUSD > 0 ? `$${totalUSD} USD` : ""} placeholder="—" readOnly className="bg-muted/50 font-semibold" />
-            </div>
-          </div>
 
           {/* Source */}
           <div className="space-y-1.5">
@@ -556,9 +483,9 @@ export default function BookingFormDialog() {
           </div>
 
           <div className="flex gap-3 pt-2">
-            <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button type="submit" variant="spa" className="flex-1" disabled={createBooking.isPending || conflicts.length > 0}>
-              {createBooking.isPending ? "Creando..." : conflicts.length > 0 ? "Conflictos pendientes" : "Crear Reserva"}
+            <Button type="button" variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>Cancelar</Button>
+            <Button type="submit" variant="spa" className="flex-1" disabled={updateBooking.isPending || conflicts.length > 0}>
+              {updateBooking.isPending ? "Guardando..." : conflicts.length > 0 ? "Conflictos pendientes" : "Guardar Cambios"}
             </Button>
           </div>
         </form>
