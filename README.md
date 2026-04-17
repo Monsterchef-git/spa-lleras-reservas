@@ -21,3 +21,9 @@ Sistema interno de gestión de reservas para Spa Lleras, ubicado en Parque Llera
 
 - Sitio: https://spalleras.com
 - Email: spallerasmedellin@gmail.com
+
+## Usuario Admin Inicial
+
+- **Email:** spallerasmedellin@gmail.com
+- **Contraseña:** AdminSpa2026
+- **Rol:** Admin
