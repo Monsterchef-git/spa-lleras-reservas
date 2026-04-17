@@ -38,9 +38,10 @@ export function AppSidebar() {
   const location = useLocation();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const navItems = user?.role === "admin" ? [...baseNavItems, ...adminNavItems] : baseNavItems;
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/login");
   };
 
@@ -89,10 +90,14 @@ export function AppSidebar() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{user.name}</p>
-                <div className="flex items-center gap-1">
+                <p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
+                <div className="flex items-center gap-1 mt-1">
                   <Shield className="h-3 w-3 text-muted-foreground" />
-                  <Badge variant="secondary" className="text-[10px] h-4 px-1.5">
-                    {user.role === "admin" ? "Admin" : "Staff"}
+                  <Badge
+                    variant={user.role === "admin" ? "default" : "secondary"}
+                    className="text-[10px] h-4 px-1.5"
+                  >
+                    {user.role === "admin" ? "Admin" : user.role === "staff" ? "Staff" : "Sin rol"}
                   </Badge>
                 </div>
               </div>
