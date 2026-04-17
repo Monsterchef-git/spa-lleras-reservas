@@ -420,8 +420,11 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
+            <p className="text-xs text-muted-foreground mb-3">
+              💡 Haz clic en un espacio vacío para crear una reserva, en un evento para editarlo, o arrástralo para moverlo.
+            </p>
             <div className="spa-calendar">
-              <Calendar<BookingEvent>
+              <DnDCalendar
                 localizer={localizer}
                 events={calendarEvents}
                 date={date}
@@ -439,6 +442,12 @@ export default function DashboardPage() {
                 step={30}
                 timeslots={2}
                 popup
+                selectable
+                resizable={false}
+                onSelectSlot={handleSelectSlot}
+                onSelectEvent={handleSelectEvent}
+                onEventDrop={handleEventDrop}
+                draggableAccessor={(e) => e.status !== "cancelada" && e.status !== "completada"}
               />
             </div>
           </CardContent>
