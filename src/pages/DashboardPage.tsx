@@ -555,6 +555,20 @@ export default function DashboardPage() {
             </div>
           ))}
         </div>
+
+        {/* Interactive dialogs */}
+        <BookingFormDialog
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          initialDate={createDate}
+          initialStartTime={createTime}
+          hideTrigger
+        />
+        <BookingEditDialog
+          booking={editBooking}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+        />
       </div>
     </AppLayout>
   );
