@@ -16,6 +16,24 @@ export type Booking = Tables<"bookings"> & {
 };
 
 export function useBookings() {
+  const qc = useQueryClient();
+
+  // Realtime subscription: invalidate query on any change to bookings or booking_items
+  useEffect(() => {
+    const channel = supabase
+      .channel("bookings-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, () => {
+        qc.invalidateQueries({ queryKey: ["bookings"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "booking_items" }, () => {
+        qc.invalidateQueries({ queryKey: ["bookings"] });
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [qc]);
+
   return useQuery({
     queryKey: ["bookings"],
     queryFn: async () => {
