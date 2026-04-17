@@ -190,6 +190,7 @@ export default function DashboardPage() {
 
   const eventStyleGetter = useCallback((event: BookingEvent) => {
     const bg = statusColors[event.status] || "hsl(168, 45%, 40%)";
+    const isCancelled = event.status === "cancelada";
     return {
       style: {
         backgroundColor: bg,
@@ -198,10 +199,68 @@ export default function DashboardPage() {
         color: "#fff",
         fontSize: "0.75rem",
         padding: "2px 6px",
-        opacity: 0.95,
+        opacity: isCancelled ? 0.6 : 0.95,
+        textDecoration: isCancelled ? "line-through" : "none",
       },
     };
   }, []);
+
+  const formatTime = (d: Date) =>
+    `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const formatDate = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+  const handleSelectSlot = useCallback((slot: SlotInfo) => {
+    setCreateDate(formatDate(slot.start as Date));
+    setCreateTime(formatTime(slot.start as Date));
+    setCreateOpen(true);
+  }, []);
+
+  const handleSelectEvent = useCallback(
+    (event: BookingEvent) => {
+      const b = bookings?.find((x) => x.id === event.bookingId);
+      if (!b) return;
+      setEditBooking(b);
+      setEditOpen(true);
+    },
+    [bookings],
+  );
+
+  const handleEventDrop = useCallback(
+    async ({ event, start, end }: { event: BookingEvent; start: Date | string; end: Date | string }) => {
+      const b = bookings?.find((x) => x.id === event.bookingId);
+      if (!b) return;
+      const s = typeof start === "string" ? new Date(start) : start;
+      const e = typeof end === "string" ? new Date(end) : end;
+      const newDate = formatDate(s);
+      const newStart = `${formatTime(s)}:00`;
+      const newEnd = `${formatTime(e)}:00`;
+      try {
+        await updateBooking.mutateAsync({
+          id: b.id,
+          booking: {
+            booking_date: newDate,
+            start_time: newStart,
+            end_time: newEnd,
+          },
+          items: (b.booking_items ?? []).map((it) => ({
+            service_id: it.service_id,
+            service_duration_id: it.service_duration_id ?? null,
+            quantity: it.quantity,
+            price_cop: it.price_cop,
+            price_usd: it.price_usd,
+          })),
+        });
+        toast.success("Reserva movida", {
+          description: `${b.clients?.name ?? "Cliente"} → ${newDate} ${newStart.slice(0, 5)}`,
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "No se pudo mover la reserva";
+        toast.error("Error al mover", { description: msg });
+      }
+    },
+    [bookings, updateBooking],
+  );
 
   if (loadingB || loadingT || loadingR) {
     return (
