@@ -90,9 +90,17 @@ export default function DashboardPage() {
   const { data: bookings, isLoading: loadingB } = useBookings();
   const { data: therapists, isLoading: loadingT } = useTherapists();
   const { data: resources, isLoading: loadingR } = useResources();
+  const updateBooking = useUpdateBooking();
 
   const [view, setView] = useState<(typeof Views)[keyof typeof Views]>(Views.WEEK);
   const [date, setDate] = useState(new Date());
+
+  // Interactive dialogs
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createDate, setCreateDate] = useState<string | undefined>();
+  const [createTime, setCreateTime] = useState<string | undefined>();
+  const [editBooking, setEditBooking] = useState<Booking | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
 
   const today = getToday();
   const week = getWeekRange();
@@ -143,26 +151,25 @@ export default function DashboardPage() {
     };
   }, [bookings, therapists, resources, today, week.start, week.end]);
 
-  // Calendar events
+  // Calendar events (include all statuses; canceladas mostradas en rojo, completadas en gris)
   const calendarEvents = useMemo<BookingEvent[]>(() => {
     if (!bookings) return [];
-    return bookings
-      .filter((b) => b.status !== "cancelada")
-      .map((b) => {
-        const [y, m, d] = b.booking_date.split("-").map(Number);
-        const [sh, sm] = (b.start_time ?? "09:00").split(":").map(Number);
-        const [eh, em] = (b.end_time ?? "10:00").split(":").map(Number);
-        const clientName = b.clients?.name ?? "Sin cliente";
-        const serviceName = b.booking_items?.length
-          ? b.booking_items.map((i) => i.services?.name ?? "").join(", ")
-          : b.services?.name ?? "Servicio";
-        return {
-          title: `${clientName} — ${serviceName}`,
-          start: new Date(y, m - 1, d, sh, sm),
-          end: new Date(y, m - 1, d, eh, em),
-          status: b.status ?? "pendiente",
-        };
-      });
+    return bookings.map((b) => {
+      const [y, m, d] = b.booking_date.split("-").map(Number);
+      const [sh, sm] = (b.start_time ?? "09:00").split(":").map(Number);
+      const [eh, em] = (b.end_time ?? "10:00").split(":").map(Number);
+      const clientName = b.clients?.name ?? "Sin cliente";
+      const serviceName = b.booking_items?.length
+        ? b.booking_items.map((i) => i.services?.name ?? "").join(", ")
+        : b.services?.name ?? "Servicio";
+      return {
+        title: `${clientName} — ${serviceName}`,
+        start: new Date(y, m - 1, d, sh, sm),
+        end: new Date(y, m - 1, d, eh, em),
+        status: b.status ?? "pendiente",
+        bookingId: b.id,
+      };
+    });
   }, [bookings]);
 
   // Resource occupancy for today
