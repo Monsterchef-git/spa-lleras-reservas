@@ -60,8 +60,11 @@ export default function LoginPage() {
       <Card className="w-full max-w-md border-border/50 shadow-lg">
         <CardContent className="p-8">
           <div className="text-center mb-8">
+            <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-primary flex items-center justify-center">
+              <img src="/spa_logo_blanco.png" alt="Spa Lleras" className="w-10 h-10 object-contain" />
+            </div>
             <h1 className="font-heading text-3xl font-bold text-primary">Spa Lleras</h1>
-            <p className="text-sm text-muted-foreground mt-2">Central Reservations</p>
+            <p className="text-sm text-muted-foreground mt-2">Sistema de Reservas</p>
             <p className="text-xs text-muted-foreground mt-1">Parque Lleras, Medellín</p>
           </div>
 
