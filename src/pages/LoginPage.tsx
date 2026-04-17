@@ -8,12 +8,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { lovable } from "@/integrations/lovable";
 import { Separator } from "@/components/ui/separator";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { login, user, isLoading: authLoading } = useAuth();
@@ -80,7 +82,27 @@ export default function LoginPage() {
                   ¿Olvidaste tu contraseña?
                 </Link>
               </div>
-              <Input id="password" type="password" autoComplete="current-password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
             <Button type="submit" variant="spa" className="w-full" disabled={loading}>
               {loading ? "Ingresando..." : "Ingresar"}
@@ -98,7 +120,13 @@ export default function LoginPage() {
           </Button>
 
           <p className="text-xs text-center text-muted-foreground mt-6">
-            ¿No tienes cuenta? Solicítala a un administrador.
+            ¿No tienes cuenta?{" "}
+            <a
+              href="mailto:spallerasmedellin@gmail.com?subject=Solicitud%20de%20acceso%20al%20Sistema%20de%20Reservas%20Spa%20Lleras&body=Hola%2C%0A%0AQuisiera%20solicitar%20acceso%20al%20sistema%20de%20reservas.%0A%0ANombre%3A%20%0ARol%20deseado%20(Admin%2FStaff)%3A%20%0AMotivo%3A%20%0A%0AGracias."
+              className="text-primary hover:underline font-medium"
+            >
+              Solicítala a un administrador
+            </a>
           </p>
 
           <p className="text-xs text-center text-muted-foreground mt-2">
