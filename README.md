@@ -27,3 +27,16 @@ Sistema interno de gestión de reservas para Spa Lleras, ubicado en Parque Llera
 - **Email:** spallerasmedellin@gmail.com
 - **Contraseña:** AdminSpa2026
 - **Rol:** Admin
+
+## Datos de Ejemplo
+
+El sistema incluye 10 reservas de ejemplo para pruebas:
+
+- **Hoy y mañana:** Reservas activas para probar el calendario
+- **Servicios variados:** Masajes, faciales, manicure, y combos (masaje + facial)
+- **Masaje a Cuatro Manos:** Una reserva especial con dos terapeutas
+- **Estados:** Pendiente, Confirmada, Cancelada, Completada
+- **Fuentes:** WhatsApp, Web, Fresha, Walk-in
+- **Clientes internacionales:** USA, UK, España
+
+Las reservas aparecen en el Dashboard, Calendario y Reportes.
