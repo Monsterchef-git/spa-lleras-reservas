@@ -2,27 +2,36 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { CalendarDays, Clock, Users, TrendingUp, CheckCircle, AlertCircle, XCircle, Timer, MessageCircle, DollarSign, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, momentLocalizer, Views, type Event } from "react-big-calendar";
+import { Calendar, momentLocalizer, Views, type Event, type SlotInfo } from "react-big-calendar";
+import withDragAndDrop from "react-big-calendar/lib/addons/dragAndDrop";
 import moment from "moment";
 import "moment/locale/es";
 import "react-big-calendar/lib/css/react-big-calendar.css";
+import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
 import { useCallback, useMemo, useState } from "react";
-import { useBookings, type Booking } from "@/hooks/useBookings";
+import { useBookings, useUpdateBooking, type Booking } from "@/hooks/useBookings";
 import { useTherapists } from "@/hooks/useTherapists";
 import { useResources } from "@/hooks/useResources";
+import BookingFormDialog from "@/components/BookingFormDialog";
+import BookingEditDialog from "@/components/BookingEditDialog";
+import { toast } from "sonner";
 
 moment.locale("es");
 const localizer = momentLocalizer(moment);
 
 interface BookingEvent extends Event {
   status: string;
+  bookingId: string;
 }
 
+const DnDCalendar = withDragAndDrop<BookingEvent>(Calendar as never);
+
+// Status colors: pendiente=amarillo, confirmada=verde, cancelada=rojo, completada=gris
 const statusColors: Record<string, string> = {
-  completada: "hsl(210, 60%, 50%)",
-  confirmada: "hsl(168, 45%, 40%)",
-  pendiente: "hsl(42, 60%, 55%)",
+  pendiente: "hsl(42, 90%, 55%)",
+  confirmada: "hsl(142, 55%, 42%)",
   cancelada: "hsl(0, 72%, 51%)",
+  completada: "hsl(220, 10%, 55%)",
 };
 
 const statusLabels: Record<string, string> = {
