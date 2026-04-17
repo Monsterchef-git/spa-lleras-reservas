@@ -17,8 +17,9 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+import { UserPlus } from "lucide-react";
 
-const navItems = [
+const baseNavItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/reservas", icon: CalendarDays, label: "Reservas" },
   { to: "/servicios", icon: Sparkles, label: "Servicios" },
@@ -26,6 +27,10 @@ const navItems = [
   { to: "/clientes", icon: UserCircle, label: "Clientes" },
   { to: "/reportes", icon: BarChart3, label: "Reportes" },
   { to: "/configuracion", icon: Settings, label: "Configuración" },
+];
+
+const adminNavItems = [
+  { to: "/usuarios", icon: UserPlus, label: "Usuarios" },
 ];
 
 export function AppSidebar() {

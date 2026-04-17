@@ -3,23 +3,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { lovable } from "@/integrations/lovable";
+import { Separator } from "@/components/ui/separator";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, user } = useAuth();
+  const { login, user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
 
-  const from = (location.state as any)?.from?.pathname || "/";
+  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || "/";
 
-  // Already logged in
-  if (user) {
+  if (!authLoading && user) {
     navigate(from, { replace: true });
     return null;
   }
@@ -31,11 +33,26 @@ export default function LoginPage() {
       await login(email, password);
       toast({ title: "Bienvenido", description: `Sesión iniciada como ${email}` });
       navigate(from, { replace: true });
-    } catch {
-      toast({ title: "Error", description: "No se pudo iniciar sesión.", variant: "destructive" });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "No se pudo iniciar sesión.";
+      toast({ title: "Error", description: msg, variant: "destructive" });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogle = async () => {
+    setGoogleLoading(true);
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin,
+    });
+    if (result.error) {
+      toast({ title: "Error con Google", description: String(result.error), variant: "destructive" });
+      setGoogleLoading(false);
+      return;
+    }
+    if (result.redirected) return;
+    navigate(from, { replace: true });
   };
 
   return (
@@ -51,25 +68,37 @@ export default function LoginPage() {
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Correo electrónico</Label>
-              <Input id="email" type="email" placeholder="admin@spalleras.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <Input id="email" type="email" autoComplete="email" placeholder="tu@spalleras.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Contraseña</Label>
-              <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Contraseña</Label>
+                <Link to="/forgot-password" className="text-xs text-primary hover:underline">
+                  ¿Olvidaste tu contraseña?
+                </Link>
+              </div>
+              <Input id="password" type="password" autoComplete="current-password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
             <Button type="submit" variant="spa" className="w-full" disabled={loading}>
               {loading ? "Ingresando..." : "Ingresar"}
             </Button>
           </form>
 
-          <div className="mt-6 p-3 bg-muted/50 rounded-lg">
-            <p className="text-xs text-muted-foreground text-center">
-              <strong>Demo:</strong> Usa cualquier email/contraseña.<br />
-              Emails con "admin" → rol Admin, otros → rol Staff.
-            </p>
+          <div className="my-6 flex items-center gap-3">
+            <Separator className="flex-1" />
+            <span className="text-xs text-muted-foreground">o</span>
+            <Separator className="flex-1" />
           </div>
 
-          <p className="text-xs text-center text-muted-foreground mt-4">
+          <Button type="button" variant="outline" className="w-full" onClick={handleGoogle} disabled={googleLoading}>
+            {googleLoading ? "Conectando..." : "Continuar con Google"}
+          </Button>
+
+          <p className="text-xs text-center text-muted-foreground mt-6">
+            ¿No tienes cuenta? Solicítala a un administrador.
+          </p>
+
+          <p className="text-xs text-center text-muted-foreground mt-2">
             © {new Date().getFullYear()} Spa Lleras Central · Medellín, Colombia
           </p>
         </CardContent>

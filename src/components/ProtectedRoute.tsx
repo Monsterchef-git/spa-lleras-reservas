@@ -1,8 +1,13 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, type AppRole } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 
-export function ProtectedRoute({ children }: { children: React.ReactNode }) {
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  requireRole?: AppRole;
+}
+
+export function ProtectedRoute({ children, requireRole }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
   const location = useLocation();
 
@@ -16,6 +21,10 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (requireRole && user.role !== requireRole) {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
