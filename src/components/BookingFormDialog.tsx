@@ -39,8 +39,28 @@ function nextUid() {
   return `ci-${++uidCounter}-${Date.now()}`;
 }
 
-export default function BookingFormDialog() {
-  const [open, setOpen] = useState(false);
+interface BookingFormDialogProps {
+  open?: boolean;
+  onOpenChange?: (v: boolean) => void;
+  initialDate?: string;
+  initialStartTime?: string;
+  hideTrigger?: boolean;
+}
+
+export default function BookingFormDialog({
+  open: controlledOpen,
+  onOpenChange,
+  initialDate,
+  initialStartTime,
+  hideTrigger = false,
+}: BookingFormDialogProps = {}) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = (v: boolean) => {
+    if (!isControlled) setInternalOpen(v);
+    onOpenChange?.(v);
+  };
   const { toast } = useToast();
   const { data: services } = useServices();
   const { data: therapists } = useTherapists();
@@ -60,6 +80,14 @@ export default function BookingFormDialog() {
   const [source, setSource] = useState("web");
   const [notes, setNotes] = useState("");
   const [conflicts, setConflicts] = useState<string[]>([]);
+
+  // Apply preselected date/time when opened externally
+  useEffect(() => {
+    if (open) {
+      if (initialDate) setDate(initialDate);
+      if (initialStartTime) setStartTime(initialStartTime);
+    }
+  }, [open, initialDate, initialStartTime]);
 
   const activeServices = useMemo(() => (services ?? []).filter((s) => s.is_active), [services]);
   const activeTherapists = useMemo(() => (therapists ?? []).filter((t) => t.is_available), [therapists]);
