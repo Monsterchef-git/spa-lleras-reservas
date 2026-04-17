@@ -2,27 +2,36 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { CalendarDays, Clock, Users, TrendingUp, CheckCircle, AlertCircle, XCircle, Timer, MessageCircle, DollarSign, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, momentLocalizer, Views, type Event } from "react-big-calendar";
+import { Calendar, momentLocalizer, Views, type Event, type SlotInfo } from "react-big-calendar";
+import withDragAndDrop from "react-big-calendar/lib/addons/dragAndDrop";
 import moment from "moment";
 import "moment/locale/es";
 import "react-big-calendar/lib/css/react-big-calendar.css";
+import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
 import { useCallback, useMemo, useState } from "react";
-import { useBookings, type Booking } from "@/hooks/useBookings";
+import { useBookings, useUpdateBooking, type Booking } from "@/hooks/useBookings";
 import { useTherapists } from "@/hooks/useTherapists";
 import { useResources } from "@/hooks/useResources";
+import BookingFormDialog from "@/components/BookingFormDialog";
+import BookingEditDialog from "@/components/BookingEditDialog";
+import { toast } from "sonner";
 
 moment.locale("es");
 const localizer = momentLocalizer(moment);
 
 interface BookingEvent extends Event {
   status: string;
+  bookingId: string;
 }
 
+const DnDCalendar = withDragAndDrop<BookingEvent>(Calendar as never);
+
+// Status colors: pendiente=amarillo, confirmada=verde, cancelada=rojo, completada=gris
 const statusColors: Record<string, string> = {
-  completada: "hsl(210, 60%, 50%)",
-  confirmada: "hsl(168, 45%, 40%)",
-  pendiente: "hsl(42, 60%, 55%)",
+  pendiente: "hsl(42, 90%, 55%)",
+  confirmada: "hsl(142, 55%, 42%)",
   cancelada: "hsl(0, 72%, 51%)",
+  completada: "hsl(220, 10%, 55%)",
 };
 
 const statusLabels: Record<string, string> = {
@@ -81,9 +90,17 @@ export default function DashboardPage() {
   const { data: bookings, isLoading: loadingB } = useBookings();
   const { data: therapists, isLoading: loadingT } = useTherapists();
   const { data: resources, isLoading: loadingR } = useResources();
+  const updateBooking = useUpdateBooking();
 
   const [view, setView] = useState<(typeof Views)[keyof typeof Views]>(Views.WEEK);
   const [date, setDate] = useState(new Date());
+
+  // Interactive dialogs
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createDate, setCreateDate] = useState<string | undefined>();
+  const [createTime, setCreateTime] = useState<string | undefined>();
+  const [editBooking, setEditBooking] = useState<Booking | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
 
   const today = getToday();
   const week = getWeekRange();
@@ -134,26 +151,25 @@ export default function DashboardPage() {
     };
   }, [bookings, therapists, resources, today, week.start, week.end]);
 
-  // Calendar events
+  // Calendar events (include all statuses; canceladas mostradas en rojo, completadas en gris)
   const calendarEvents = useMemo<BookingEvent[]>(() => {
     if (!bookings) return [];
-    return bookings
-      .filter((b) => b.status !== "cancelada")
-      .map((b) => {
-        const [y, m, d] = b.booking_date.split("-").map(Number);
-        const [sh, sm] = (b.start_time ?? "09:00").split(":").map(Number);
-        const [eh, em] = (b.end_time ?? "10:00").split(":").map(Number);
-        const clientName = b.clients?.name ?? "Sin cliente";
-        const serviceName = b.booking_items?.length
-          ? b.booking_items.map((i) => i.services?.name ?? "").join(", ")
-          : b.services?.name ?? "Servicio";
-        return {
-          title: `${clientName} — ${serviceName}`,
-          start: new Date(y, m - 1, d, sh, sm),
-          end: new Date(y, m - 1, d, eh, em),
-          status: b.status ?? "pendiente",
-        };
-      });
+    return bookings.map((b) => {
+      const [y, m, d] = b.booking_date.split("-").map(Number);
+      const [sh, sm] = (b.start_time ?? "09:00").split(":").map(Number);
+      const [eh, em] = (b.end_time ?? "10:00").split(":").map(Number);
+      const clientName = b.clients?.name ?? "Sin cliente";
+      const serviceName = b.booking_items?.length
+        ? b.booking_items.map((i) => i.services?.name ?? "").join(", ")
+        : b.services?.name ?? "Servicio";
+      return {
+        title: `${clientName} — ${serviceName}`,
+        start: new Date(y, m - 1, d, sh, sm),
+        end: new Date(y, m - 1, d, eh, em),
+        status: b.status ?? "pendiente",
+        bookingId: b.id,
+      };
+    });
   }, [bookings]);
 
   // Resource occupancy for today
@@ -174,6 +190,7 @@ export default function DashboardPage() {
 
   const eventStyleGetter = useCallback((event: BookingEvent) => {
     const bg = statusColors[event.status] || "hsl(168, 45%, 40%)";
+    const isCancelled = event.status === "cancelada";
     return {
       style: {
         backgroundColor: bg,
@@ -182,10 +199,68 @@ export default function DashboardPage() {
         color: "#fff",
         fontSize: "0.75rem",
         padding: "2px 6px",
-        opacity: 0.95,
+        opacity: isCancelled ? 0.6 : 0.95,
+        textDecoration: isCancelled ? "line-through" : "none",
       },
     };
   }, []);
+
+  const formatTime = (d: Date) =>
+    `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const formatDate = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+  const handleSelectSlot = useCallback((slot: SlotInfo) => {
+    setCreateDate(formatDate(slot.start as Date));
+    setCreateTime(formatTime(slot.start as Date));
+    setCreateOpen(true);
+  }, []);
+
+  const handleSelectEvent = useCallback(
+    (event: BookingEvent) => {
+      const b = bookings?.find((x) => x.id === event.bookingId);
+      if (!b) return;
+      setEditBooking(b);
+      setEditOpen(true);
+    },
+    [bookings],
+  );
+
+  const handleEventDrop = useCallback(
+    async ({ event, start, end }: { event: BookingEvent; start: Date | string; end: Date | string }) => {
+      const b = bookings?.find((x) => x.id === event.bookingId);
+      if (!b) return;
+      const s = typeof start === "string" ? new Date(start) : start;
+      const e = typeof end === "string" ? new Date(end) : end;
+      const newDate = formatDate(s);
+      const newStart = `${formatTime(s)}:00`;
+      const newEnd = `${formatTime(e)}:00`;
+      try {
+        await updateBooking.mutateAsync({
+          id: b.id,
+          booking: {
+            booking_date: newDate,
+            start_time: newStart,
+            end_time: newEnd,
+          },
+          items: (b.booking_items ?? []).map((it) => ({
+            service_id: it.service_id,
+            service_duration_id: it.service_duration_id ?? null,
+            quantity: it.quantity,
+            price_cop: it.price_cop,
+            price_usd: it.price_usd,
+          })),
+        });
+        toast.success("Reserva movida", {
+          description: `${b.clients?.name ?? "Cliente"} → ${newDate} ${newStart.slice(0, 5)}`,
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "No se pudo mover la reserva";
+        toast.error("Error al mover", { description: msg });
+      }
+    },
+    [bookings, updateBooking],
+  );
 
   if (loadingB || loadingT || loadingR) {
     return (
@@ -345,8 +420,11 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
+            <p className="text-xs text-muted-foreground mb-3">
+              💡 Haz clic en un espacio vacío para crear una reserva, en un evento para editarlo, o arrástralo para moverlo.
+            </p>
             <div className="spa-calendar">
-              <Calendar<BookingEvent>
+              <DnDCalendar
                 localizer={localizer}
                 events={calendarEvents}
                 date={date}
@@ -364,6 +442,12 @@ export default function DashboardPage() {
                 step={30}
                 timeslots={2}
                 popup
+                selectable
+                resizable={false}
+                onSelectSlot={handleSelectSlot}
+                onSelectEvent={handleSelectEvent}
+                onEventDrop={handleEventDrop}
+                draggableAccessor={(e) => e.status !== "cancelada" && e.status !== "completada"}
               />
             </div>
           </CardContent>
@@ -471,6 +555,20 @@ export default function DashboardPage() {
             </div>
           ))}
         </div>
+
+        {/* Interactive dialogs */}
+        <BookingFormDialog
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          initialDate={createDate}
+          initialStartTime={createTime}
+          hideTrigger
+        />
+        <BookingEditDialog
+          booking={editBooking}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+        />
       </div>
     </AppLayout>
   );
