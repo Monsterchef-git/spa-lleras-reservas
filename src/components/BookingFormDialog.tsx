@@ -254,12 +254,14 @@ export default function BookingFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
-      <DialogTrigger asChild>
-        <Button variant="spa" className="gap-2">
-          <Plus className="h-4 w-4" />
-          Nueva Reserva
-        </Button>
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button variant="spa" className="gap-2">
+            <Plus className="h-4 w-4" />
+            Nueva Reserva
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-heading text-xl">Nueva Reserva</DialogTitle>
