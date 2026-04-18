@@ -81,7 +81,7 @@ export default function BookingEditDialog({ booking, open, onOpenChange }: Props
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(BookingSchema),
     defaultValues: empty,
-    mode: "onTouched",
+    mode: "onChange",
   });
 
   const items = useWatch({ control: form.control, name: "items" });
@@ -170,6 +170,7 @@ export default function BookingEditDialog({ booking, open, onOpenChange }: Props
   };
 
   const submitting = form.formState.isSubmitting || updateBooking.isPending;
+  const hasErrors = Object.keys(form.formState.errors).length > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -208,13 +209,15 @@ export default function BookingEditDialog({ booking, open, onOpenChange }: Props
                     type="submit"
                     variant="spa"
                     className="flex-1"
-                    disabled={submitting || conflicts.length > 0}
+                    disabled={submitting || conflicts.length > 0 || hasErrors}
                   >
                     {submitting
                       ? "Guardando..."
                       : conflicts.length > 0
                         ? "Conflictos pendientes"
-                        : "Guardar Cambios"}
+                        : hasErrors
+                          ? "Revisa los campos"
+                          : "Guardar Cambios"}
                   </Button>
                 </div>
               </form>
