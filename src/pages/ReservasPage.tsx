@@ -55,6 +55,7 @@ export default function ReservasPage() {
   const [dateTo, setDateTo] = useState("");
   const [editBooking, setEditBooking] = useState<Booking | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
 
   const hasActiveFilters = statusFilter !== "Todas" || sourceFilter !== "Todas" || dateFrom || dateTo;
 
@@ -76,9 +77,23 @@ export default function ReservasPage() {
     return matchesSearch && matchesStatus && matchesSource && matchesDateFrom && matchesDateTo;
   });
 
-  const handleStatusChange = async (id: string, status: "pendiente" | "confirmada" | "cancelada" | "completada") => {
+  const handleStatusChange = async (b: Booking, status: "pendiente" | "confirmada" | "cancelada" | "completada") => {
+    if (status === "cancelada") {
+      setCancelTarget(b);
+      return;
+    }
     try {
-      await updateStatus.mutateAsync({ id, status });
+      await updateStatus.mutateAsync({ id: b.id, status });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleConfirmCancel = async (reason: string | null) => {
+    if (!cancelTarget) return;
+    try {
+      await updateStatus.mutateAsync({ id: cancelTarget.id, status: "cancelada", reason });
+      toast({ title: "Reserva cancelada" });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
