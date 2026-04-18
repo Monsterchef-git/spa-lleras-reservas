@@ -7,13 +7,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Globe, Languages, DollarSign, Trash2, ShoppingCart, Clock, AlertTriangle, ShieldAlert } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Globe, Languages, DollarSign, Trash2, ShoppingCart, Clock, AlertTriangle, ShieldAlert, History } from "lucide-react";
 import { toast } from "sonner";
 import { useServices, type ServiceWithDurations } from "@/hooks/useServices";
 import { useTherapists } from "@/hooks/useTherapists";
 import { useResources } from "@/hooks/useResources";
 import { useClients } from "@/hooks/useClients";
 import { useUpdateBooking, useCheckAvailability, type Booking } from "@/hooks/useBookings";
+import BookingHistoryTab from "@/components/BookingHistoryTab";
+import CancelBookingDialog from "@/components/CancelBookingDialog";
 
 interface CartItem {
   uid: string;
