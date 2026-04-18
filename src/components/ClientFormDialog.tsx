@@ -1,53 +1,63 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
+} from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { ClientSchema, type ClientFormValues } from "@/lib/schemas";
 
-export interface ClientFormData {
-  name: string;
-  phone: string;
-  email: string;
-  notes: string;
-}
+/* Backwards-compatible export so ClientesPage keeps compiling. */
+export type ClientFormData = ClientFormValues;
 
 interface Props {
-  client?: ClientFormData;
+  client?: Partial<ClientFormValues>;
   trigger: React.ReactNode;
-  onSave: (data: ClientFormData) => void;
+  onSave: (data: ClientFormValues) => Promise<void> | void;
 }
+
+const empty: ClientFormValues = { name: "", email: "", phone: "", notes: "" };
 
 export default function ClientFormDialog({ client, trigger, onSave }: Props) {
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState(client?.name ?? "");
-  const [phone, setPhone] = useState(client?.phone ?? "");
-  const [email, setEmail] = useState(client?.email ?? "");
-  const [notes, setNotes] = useState(client?.notes ?? "");
   const { toast } = useToast();
   const isEdit = !!client;
 
-  const reset = () => {
-    setName(client?.name ?? "");
-    setPhone(client?.phone ?? "");
-    setEmail(client?.email ?? "");
-    setNotes(client?.notes ?? "");
-  };
+  const form = useForm<ClientFormValues>({
+    resolver: zodResolver(ClientSchema),
+    defaultValues: { ...empty, ...client },
+    mode: "onTouched",
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) return;
-    onSave({ name: name.trim(), phone: phone.trim(), email: email.trim(), notes: notes.trim() });
-    toast({
-      title: isEdit ? "Cliente actualizado" : "Cliente agregado",
-      description: `${name.trim()} se ha ${isEdit ? "actualizado" : "registrado"} correctamente.`,
-    });
-    setOpen(false);
+  // Re-sync defaults whenever the dialog opens (or the client prop changes)
+  useEffect(() => {
+    if (open) form.reset({ ...empty, ...client });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, client]);
+
+  const onSubmit = async (values: ClientFormValues) => {
+    try {
+      await onSave(values);
+      toast({
+        title: isEdit ? "Cliente actualizado" : "Cliente agregado",
+        description: `${values.name} se ${isEdit ? "actualizó" : "registró"} correctamente.`,
+      });
+      setOpen(false);
+    } catch (err: any) {
+      toast({
+        title: "Error al guardar",
+        description: err?.message ?? "Intenta de nuevo.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (v) reset(); }}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -55,30 +65,90 @@ export default function ClientFormDialog({ client, trigger, onSave }: Props) {
             {isEdit ? "Editar Cliente" : "Nuevo Cliente"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="cName">Nombre completo</Label>
-            <Input id="cName" value={name} onChange={(e) => setName(e.target.value)} placeholder="María García" required />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="cPhone">WhatsApp / Teléfono</Label>
-              <Input id="cPhone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+57 300 123 4567" />
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-2">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Nombre completo <span className="text-destructive">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input placeholder="María García" autoComplete="off" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>WhatsApp / Teléfono</FormLabel>
+                    <FormControl>
+                      <Input placeholder="+57 300 123 4567" autoComplete="off" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Email <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="cliente@email.com" autoComplete="off" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="cEmail">Email</Label>
-              <Input id="cEmail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="cliente@email.com" />
+
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notas</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      rows={3}
+                      placeholder="Preferencias, alergias, notas especiales..."
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="flex gap-3 pt-2">
+              <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                variant="spa"
+                className="flex-1"
+                disabled={form.formState.isSubmitting}
+              >
+                {form.formState.isSubmitting
+                  ? "Guardando..."
+                  : isEdit ? "Guardar Cambios" : "Agregar Cliente"}
+              </Button>
             </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="cNotes">Notas</Label>
-            <Textarea id="cNotes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Preferencias, alergias, notas especiales..." rows={3} />
-          </div>
-          <div className="flex gap-3 pt-2">
-            <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button type="submit" variant="spa" className="flex-1">{isEdit ? "Guardar Cambios" : "Agregar Cliente"}</Button>
-          </div>
-        </form>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
