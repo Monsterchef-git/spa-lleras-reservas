@@ -264,7 +264,11 @@ export default function BookingFormFields({
         <FormField
           control={control}
           name="items"
-          render={() => <FormMessage />}
+          render={() => (
+            <FormItem>
+              <FormMessage className="text-sm font-medium" />
+            </FormItem>
+          )}
         />
 
         <div className="space-y-2">
