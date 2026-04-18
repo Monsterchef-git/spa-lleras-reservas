@@ -227,7 +227,7 @@ export default function ReservasPage() {
                       <td className="py-3 px-4">
                         <Select
                           value={b.status ?? "pendiente"}
-                          onValueChange={(v) => handleStatusChange(b.id, v as any)}
+                          onValueChange={(v) => handleStatusChange(b, v as any)}
                         >
                           <SelectTrigger className="h-7 w-[120px] text-xs border-0 p-0">
                             <Badge variant="outline" className={statusClasses[b.status ?? "pendiente"]}>
@@ -254,13 +254,25 @@ export default function ReservasPage() {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>¿Eliminar reserva?</AlertDialogTitle>
-                                <AlertDialogDescription>Esta acción no se puede deshacer.</AlertDialogDescription>
+                                <AlertDialogTitle className="flex items-center gap-2">
+                                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                                  ¿Eliminar reserva permanentemente?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription className="space-y-2">
+                                  <span className="block">
+                                    Vas a eliminar la reserva de <strong>{b.clients?.name ?? "cliente"}</strong> del{" "}
+                                    <strong>{b.booking_date}</strong> a las <strong>{b.start_time?.slice(0,5)}</strong>.
+                                  </span>
+                                  <span className="block bg-destructive/10 border border-destructive/30 rounded-md p-2 text-xs text-destructive">
+                                    Esta acción <strong>no se puede deshacer</strong>. Si solo quieres anularla,
+                                    cámbiale el estado a <em>Cancelada</em> en su lugar.
+                                  </span>
+                                </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogCancel>Volver</AlertDialogCancel>
                                 <AlertDialogAction onClick={() => handleDelete(b.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                  Eliminar
+                                  Sí, eliminar
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
@@ -275,6 +287,11 @@ export default function ReservasPage() {
           </CardContent>
         </Card>
         <BookingEditDialog booking={editBooking} open={editOpen} onOpenChange={setEditOpen} />
+        <CancelBookingDialog
+          open={!!cancelTarget}
+          onOpenChange={(v) => { if (!v) setCancelTarget(null); }}
+          onConfirm={handleConfirmCancel}
+        />
       </div>
     </AppLayout>
   );
