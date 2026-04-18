@@ -660,6 +660,31 @@ export default function BookingFormFields({
           </FormItem>
         )}
       />
+
+      {/* Always-visible final summary */}
+      <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5 sticky bottom-0">
+        <CardContent className="p-3 grid grid-cols-3 gap-3 text-center">
+          <div>
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground flex items-center justify-center gap-1">
+              <Clock className="h-3 w-3" /> Tiempo
+            </p>
+            <p className="font-heading font-bold">{formatDuration(totalMinutes)}</p>
+            {totalMinutes > 0 && startTime && (
+              <p className="text-[10px] text-muted-foreground">
+                → {calculateEndTime(startTime, totalMinutes) || "—"}
+              </p>
+            )}
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Total COP</p>
+            <p className="font-heading font-bold">{formatCOP(totalCOP)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Total USD</p>
+            <p className="font-heading font-bold">${totalUSD}</p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
