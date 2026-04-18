@@ -77,6 +77,7 @@ export type Database = {
           created_by: string | null
           end_time: string
           id: string
+          last_notification_sent: Json | null
           nationality: string | null
           notes: string | null
           preferred_language: string | null
@@ -99,6 +100,7 @@ export type Database = {
           created_by?: string | null
           end_time: string
           id?: string
+          last_notification_sent?: Json | null
           nationality?: string | null
           notes?: string | null
           preferred_language?: string | null
@@ -121,6 +123,7 @@ export type Database = {
           created_by?: string | null
           end_time?: string
           id?: string
+          last_notification_sent?: Json | null
           nationality?: string | null
           notes?: string | null
           preferred_language?: string | null
