@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
+import { notifyBookingEmail } from "@/lib/notifyBookingEmail";
 
 export type Booking = Tables<"bookings"> & {
   clients: { name: string; phone: string | null } | null;
@@ -76,7 +77,11 @@ export function useCreateBooking() {
       }
       return booking;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["bookings"] }),
+    onSuccess: (booking) => {
+      qc.invalidateQueries({ queryKey: ["bookings"] });
+      // Fire-and-forget confirmation email (no-op if domain not yet verified).
+      void notifyBookingEmail(booking.id, "confirmation");
+    },
   });
 }
 
@@ -86,8 +91,14 @@ export function useUpdateBookingStatus() {
     mutationFn: async (input: { id: string; status: "pendiente" | "confirmada" | "cancelada" | "completada" }) => {
       const { error } = await supabase.from("bookings").update({ status: input.status }).eq("id", input.id);
       if (error) throw error;
+      return input;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["bookings"] }),
+    onSuccess: (input) => {
+      qc.invalidateQueries({ queryKey: ["bookings"] });
+      if (input.status === "cancelada") {
+        void notifyBookingEmail(input.id, "cancellation");
+      }
+    },
   });
 }
 
@@ -115,8 +126,14 @@ export function useUpdateBooking() {
         const { error: iErr } = await supabase.from("booking_items").insert(rows);
         if (iErr) throw iErr;
       }
+      return input;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["bookings"] }),
+    onSuccess: (input) => {
+      qc.invalidateQueries({ queryKey: ["bookings"] });
+      // If status changed to cancelada, send cancellation; otherwise send update.
+      const kind = input.booking.status === "cancelada" ? "cancellation" : "update";
+      void notifyBookingEmail(input.id, kind);
+    },
   });
 }
 
