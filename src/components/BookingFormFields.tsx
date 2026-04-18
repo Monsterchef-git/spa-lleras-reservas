@@ -104,7 +104,11 @@ export default function BookingFormFields({
   useEffect(() => {
     setValue("totalMinutes", totalMinutes, { shouldValidate: false });
     setValue("requiresTwoTherapists", requiresTwoTherapists, { shouldValidate: false });
-  }, [totalMinutes, requiresTwoTherapists, setValue]);
+    // Re-validate cross-field dependencies when cart changes
+    if (form.formState.isSubmitted || form.formState.touchedFields.secondTherapistId) {
+      form.trigger(["secondTherapistId", "startTime", "items"]);
+    }
+  }, [totalMinutes, requiresTwoTherapists, setValue, form]);
 
   /* Suggested addons */
   const suggestedAddons = useMemo(() => {
