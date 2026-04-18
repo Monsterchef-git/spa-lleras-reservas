@@ -88,13 +88,26 @@ export function useCreateBooking() {
 export function useUpdateBookingStatus() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { id: string; status: "pendiente" | "confirmada" | "cancelada" | "completada" }) => {
+    mutationFn: async (input: {
+      id: string;
+      status: "pendiente" | "confirmada" | "cancelada" | "completada";
+      reason?: string | null;
+    }) => {
+      // Best-effort: stash the cancellation reason in the audit log via a session GUC.
+      if (input.reason) {
+        await supabase.rpc("set_config" as any, {
+          parameter: "app.cancel_reason",
+          value: input.reason,
+          is_local: true,
+        }).then(() => {}, () => {}); // ignore if RPC not exposed
+      }
       const { error } = await supabase.from("bookings").update({ status: input.status }).eq("id", input.id);
       if (error) throw error;
       return input;
     },
     onSuccess: (input) => {
       qc.invalidateQueries({ queryKey: ["bookings"] });
+      qc.invalidateQueries({ queryKey: ["booking_audit_log", input.id] });
       if (input.status === "cancelada") {
         void notifyBookingEmail(input.id, "cancellation");
       }
@@ -130,6 +143,7 @@ export function useUpdateBooking() {
     },
     onSuccess: (input) => {
       qc.invalidateQueries({ queryKey: ["bookings"] });
+      qc.invalidateQueries({ queryKey: ["booking_audit_log", input.id] });
       // If status changed to cancelada, send cancellation; otherwise send update.
       const kind = input.booking.status === "cancelada" ? "cancellation" : "update";
       void notifyBookingEmail(input.id, kind);
