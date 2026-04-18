@@ -405,6 +405,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      set_cancel_reason: { Args: { reason: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "staff"
