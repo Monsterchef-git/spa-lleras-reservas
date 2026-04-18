@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      booking_audit_log: {
+        Row: {
+          action: string
+          booking_id: string | null
+          changed_at: string
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          reason: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          booking_id?: string | null
+          changed_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          reason?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          booking_id?: string | null
+          changed_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          reason?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       booking_items: {
         Row: {
           booking_id: string
