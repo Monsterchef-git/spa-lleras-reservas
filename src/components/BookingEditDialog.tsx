@@ -75,6 +75,7 @@ export default function BookingEditDialog({ booking, open, onOpenChange }: Props
   const [notes, setNotes] = useState("");
   const [conflicts, setConflicts] = useState<string[]>([]);
   const [checking, setChecking] = useState(false);
+  const [pendingCancel, setPendingCancel] = useState(false);
 
   const activeServices = useMemo(() => (services ?? []).filter((s) => s.is_active), [services]);
   const activeTherapists = useMemo(() => (therapists ?? []).filter((t) => t.is_available), [therapists]);
@@ -253,6 +254,17 @@ export default function BookingEditDialog({ booking, open, onOpenChange }: Props
         <DialogHeader>
           <DialogTitle className="font-heading text-xl">Editar Reserva</DialogTitle>
         </DialogHeader>
+        <Tabs defaultValue="form" className="mt-2">
+          <TabsList className="w-full grid grid-cols-2">
+            <TabsTrigger value="form">Detalles</TabsTrigger>
+            <TabsTrigger value="history" className="gap-1.5">
+              <History className="h-3.5 w-3.5" /> Historial
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="history" className="pt-3">
+            <BookingHistoryTab bookingId={booking?.id} />
+          </TabsContent>
+          <TabsContent value="form">
         <form onSubmit={handleSubmit} className="space-y-5 mt-2">
           {/* Conflict warnings */}
           {conflicts.length > 0 && (
@@ -271,7 +283,16 @@ export default function BookingEditDialog({ booking, open, onOpenChange }: Props
           {/* Status */}
           <div className="space-y-1.5">
             <Label>Estado</Label>
-            <Select value={status} onValueChange={setStatus}>
+            <Select
+              value={status}
+              onValueChange={(v) => {
+                if (v === "cancelada" && status !== "cancelada") {
+                  setPendingCancel(true);
+                  return;
+                }
+                setStatus(v);
+              }}
+            >
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {statusOptions.map((s) => (
