@@ -93,13 +93,10 @@ export function useUpdateBookingStatus() {
       status: "pendiente" | "confirmada" | "cancelada" | "completada";
       reason?: string | null;
     }) => {
-      // Best-effort: stash the cancellation reason in the audit log via a session GUC.
+      // Best-effort: stash the cancellation reason for the audit trigger.
       if (input.reason) {
-        await supabase.rpc("set_config" as any, {
-          parameter: "app.cancel_reason",
-          value: input.reason,
-          is_local: true,
-        }).then(() => {}, () => {}); // ignore if RPC not exposed
+        await supabase.rpc("set_cancel_reason" as any, { reason: input.reason })
+          .then(() => {}, () => {});
       }
       const { error } = await supabase.from("bookings").update({ status: input.status }).eq("id", input.id);
       if (error) throw error;
