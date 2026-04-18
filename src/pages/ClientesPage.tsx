@@ -2,7 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Phone, Mail, Edit, Trash2, Loader2 } from "lucide-react";
+import { Plus, Search, Phone, Mail, Edit, Trash2, Loader2, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import ClientFormDialog, { type ClientFormData } from "@/components/ClientFormDialog";
 import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from "@/hooks/useClients";
@@ -127,13 +127,24 @@ export default function ClientesPage() {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>¿Eliminar cliente?</AlertDialogTitle>
-                          <AlertDialogDescription>Se eliminará "{c.name}" permanentemente.</AlertDialogDescription>
+                          <AlertDialogTitle className="flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5 text-destructive" />
+                            ¿Eliminar cliente permanentemente?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription className="space-y-2">
+                            <span className="block">
+                              Vas a eliminar a <strong>{c.name}</strong> y todos sus datos de contacto.
+                            </span>
+                            <span className="block bg-destructive/10 border border-destructive/30 rounded-md p-2 text-xs text-destructive">
+                              Esta acción <strong>no se puede deshacer</strong>. Las reservas históricas de este
+                              cliente quedarán sin nombre asociado.
+                            </span>
+                          </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogCancel>Volver</AlertDialogCancel>
                           <AlertDialogAction onClick={() => handleDelete(c.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                            Eliminar
+                            Sí, eliminar
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
