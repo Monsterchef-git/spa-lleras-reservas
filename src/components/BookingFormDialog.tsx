@@ -65,7 +65,7 @@ export default function BookingFormDialog({
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(BookingSchema),
     defaultValues: defaults,
-    mode: "onTouched",
+    mode: "onChange",
   });
 
   const items = useWatch({ control: form.control, name: "items" });
@@ -162,6 +162,7 @@ export default function BookingFormDialog({
   };
 
   const submitting = form.formState.isSubmitting || createBooking.isPending;
+  const hasErrors = Object.keys(form.formState.errors).length > 0;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -194,13 +195,15 @@ export default function BookingFormDialog({
                 type="submit"
                 variant="spa"
                 className="flex-1"
-                disabled={submitting || conflicts.length > 0}
+                disabled={submitting || conflicts.length > 0 || hasErrors}
               >
                 {submitting
                   ? "Creando..."
                   : conflicts.length > 0
                     ? "Conflictos pendientes"
-                    : "Crear Reserva"}
+                    : hasErrors
+                      ? "Revisa los campos"
+                      : "Crear Reserva"}
               </Button>
             </div>
           </form>
