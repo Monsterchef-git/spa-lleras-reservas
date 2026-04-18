@@ -2,12 +2,13 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, X, Loader2, Trash2, Pencil } from "lucide-react";
+import { Search, Filter, X, Loader2, Trash2, Pencil, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import BookingFormDialog from "@/components/BookingFormDialog";
 import BookingEditDialog from "@/components/BookingEditDialog";
+import CancelBookingDialog from "@/components/CancelBookingDialog";
 import { useBookings, useUpdateBookingStatus, useDeleteBooking, type Booking } from "@/hooks/useBookings";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -54,6 +55,7 @@ export default function ReservasPage() {
   const [dateTo, setDateTo] = useState("");
   const [editBooking, setEditBooking] = useState<Booking | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
 
   const hasActiveFilters = statusFilter !== "Todas" || sourceFilter !== "Todas" || dateFrom || dateTo;
 
@@ -75,9 +77,23 @@ export default function ReservasPage() {
     return matchesSearch && matchesStatus && matchesSource && matchesDateFrom && matchesDateTo;
   });
 
-  const handleStatusChange = async (id: string, status: "pendiente" | "confirmada" | "cancelada" | "completada") => {
+  const handleStatusChange = async (b: Booking, status: "pendiente" | "confirmada" | "cancelada" | "completada") => {
+    if (status === "cancelada") {
+      setCancelTarget(b);
+      return;
+    }
     try {
-      await updateStatus.mutateAsync({ id, status });
+      await updateStatus.mutateAsync({ id: b.id, status });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleConfirmCancel = async (reason: string | null) => {
+    if (!cancelTarget) return;
+    try {
+      await updateStatus.mutateAsync({ id: cancelTarget.id, status: "cancelada", reason });
+      toast({ title: "Reserva cancelada" });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
@@ -226,7 +242,7 @@ export default function ReservasPage() {
                       <td className="py-3 px-4">
                         <Select
                           value={b.status ?? "pendiente"}
-                          onValueChange={(v) => handleStatusChange(b.id, v as any)}
+                          onValueChange={(v) => handleStatusChange(b, v as any)}
                         >
                           <SelectTrigger className="h-7 w-[120px] text-xs border-0 p-0">
                             <Badge variant="outline" className={statusClasses[b.status ?? "pendiente"]}>
@@ -253,13 +269,25 @@ export default function ReservasPage() {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>¿Eliminar reserva?</AlertDialogTitle>
-                                <AlertDialogDescription>Esta acción no se puede deshacer.</AlertDialogDescription>
+                                <AlertDialogTitle className="flex items-center gap-2">
+                                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                                  ¿Eliminar reserva permanentemente?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription className="space-y-2">
+                                  <span className="block">
+                                    Vas a eliminar la reserva de <strong>{b.clients?.name ?? "cliente"}</strong> del{" "}
+                                    <strong>{b.booking_date}</strong> a las <strong>{b.start_time?.slice(0,5)}</strong>.
+                                  </span>
+                                  <span className="block bg-destructive/10 border border-destructive/30 rounded-md p-2 text-xs text-destructive">
+                                    Esta acción <strong>no se puede deshacer</strong>. Si solo quieres anularla,
+                                    cámbiale el estado a <em>Cancelada</em> en su lugar.
+                                  </span>
+                                </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogCancel>Volver</AlertDialogCancel>
                                 <AlertDialogAction onClick={() => handleDelete(b.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                  Eliminar
+                                  Sí, eliminar
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
@@ -274,6 +302,11 @@ export default function ReservasPage() {
           </CardContent>
         </Card>
         <BookingEditDialog booking={editBooking} open={editOpen} onOpenChange={setEditOpen} />
+        <CancelBookingDialog
+          open={!!cancelTarget}
+          onOpenChange={(v) => { if (!v) setCancelTarget(null); }}
+          onConfirm={handleConfirmCancel}
+        />
       </div>
     </AppLayout>
   );

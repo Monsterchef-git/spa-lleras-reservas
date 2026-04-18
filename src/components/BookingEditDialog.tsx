@@ -7,13 +7,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Globe, Languages, DollarSign, Trash2, ShoppingCart, Clock, AlertTriangle, ShieldAlert } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Globe, Languages, DollarSign, Trash2, ShoppingCart, Clock, AlertTriangle, ShieldAlert, History } from "lucide-react";
 import { toast } from "sonner";
 import { useServices, type ServiceWithDurations } from "@/hooks/useServices";
 import { useTherapists } from "@/hooks/useTherapists";
 import { useResources } from "@/hooks/useResources";
 import { useClients } from "@/hooks/useClients";
 import { useUpdateBooking, useCheckAvailability, type Booking } from "@/hooks/useBookings";
+import BookingHistoryTab from "@/components/BookingHistoryTab";
+import CancelBookingDialog from "@/components/CancelBookingDialog";
 
 interface CartItem {
   uid: string;
@@ -72,6 +75,7 @@ export default function BookingEditDialog({ booking, open, onOpenChange }: Props
   const [notes, setNotes] = useState("");
   const [conflicts, setConflicts] = useState<string[]>([]);
   const [checking, setChecking] = useState(false);
+  const [pendingCancel, setPendingCancel] = useState(false);
 
   const activeServices = useMemo(() => (services ?? []).filter((s) => s.is_active), [services]);
   const activeTherapists = useMemo(() => (therapists ?? []).filter((t) => t.is_available), [therapists]);
@@ -250,6 +254,17 @@ export default function BookingEditDialog({ booking, open, onOpenChange }: Props
         <DialogHeader>
           <DialogTitle className="font-heading text-xl">Editar Reserva</DialogTitle>
         </DialogHeader>
+        <Tabs defaultValue="form" className="mt-2">
+          <TabsList className="w-full grid grid-cols-2">
+            <TabsTrigger value="form">Detalles</TabsTrigger>
+            <TabsTrigger value="history" className="gap-1.5">
+              <History className="h-3.5 w-3.5" /> Historial
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="history" className="pt-3">
+            <BookingHistoryTab bookingId={booking?.id} />
+          </TabsContent>
+          <TabsContent value="form">
         <form onSubmit={handleSubmit} className="space-y-5 mt-2">
           {/* Conflict warnings */}
           {conflicts.length > 0 && (
@@ -268,7 +283,16 @@ export default function BookingEditDialog({ booking, open, onOpenChange }: Props
           {/* Status */}
           <div className="space-y-1.5">
             <Label>Estado</Label>
-            <Select value={status} onValueChange={setStatus}>
+            <Select
+              value={status}
+              onValueChange={(v) => {
+                if (v === "cancelada" && status !== "cancelada") {
+                  setPendingCancel(true);
+                  return;
+                }
+                setStatus(v);
+              }}
+            >
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {statusOptions.map((s) => (
@@ -489,6 +513,33 @@ export default function BookingEditDialog({ booking, open, onOpenChange }: Props
             </Button>
           </div>
         </form>
+          </TabsContent>
+        </Tabs>
+        <CancelBookingDialog
+          open={pendingCancel}
+          onOpenChange={setPendingCancel}
+          onConfirm={async (reason) => {
+            if (!booking) return;
+            try {
+              await updateBooking.mutateAsync({
+                id: booking.id,
+                booking: { status: "cancelada" as any },
+                items: (booking.booking_items ?? []).map((bi) => ({
+                  service_id: bi.service_id,
+                  service_duration_id: bi.service_duration_id,
+                  quantity: bi.quantity,
+                  price_cop: bi.price_cop,
+                  price_usd: bi.price_usd,
+                })),
+              });
+              setStatus("cancelada");
+              toast.success(reason ? `Reserva cancelada — ${reason}` : "Reserva cancelada");
+              onOpenChange(false);
+            } catch (err: any) {
+              toast.error(err.message);
+            }
+          }}
+        />
       </DialogContent>
     </Dialog>
   );
