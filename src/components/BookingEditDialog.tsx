@@ -19,6 +19,8 @@ import CancelBookingDialog from "@/components/CancelBookingDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { applyBookingError } from "@/lib/bookingErrors";
+import QuickClientDialog from "@/components/QuickClientDialog";
+import { useState as useReactState } from "react";
 
 interface Props {
   booking: Booking | null;
@@ -100,6 +102,7 @@ export default function BookingEditDialog({ booking, open, onOpenChange }: Props
 
   const [conflicts, setConflicts] = useState<string[]>([]);
   const [pendingCancel, setPendingCancel] = useState(false);
+  const [quickClientOpen, setQuickClientOpen] = useState(false);
 
   /* Hydrate when booking changes */
   useEffect(() => {
@@ -225,6 +228,7 @@ export default function BookingEditDialog({ booking, open, onOpenChange }: Props
                   conflicts={conflicts}
                   showStatus
                   onCancelStatusIntercept={() => setPendingCancel(true)}
+                  onCreateNewClient={() => setQuickClientOpen(true)}
                   mobileStep={isMobile ? step : undefined}
                 />
 

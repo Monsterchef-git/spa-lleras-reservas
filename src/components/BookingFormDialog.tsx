@@ -9,13 +9,18 @@ import { useToast } from "@/hooks/use-toast";
 import { useServices } from "@/hooks/useServices";
 import { useTherapists } from "@/hooks/useTherapists";
 import { useResources } from "@/hooks/useResources";
-import { useClients } from "@/hooks/useClients";
+import { useClients, useCreateClient, useUpdateClient } from "@/hooks/useClients";
 import { useCreateBooking, useCheckAvailability } from "@/hooks/useBookings";
 import { BookingSchema, calculateEndTime, type BookingFormValues } from "@/lib/schemas";
 import BookingFormFields, { nextItemUid, useCartTotals } from "@/components/BookingFormFields";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { applyBookingError } from "@/lib/bookingErrors";
+import QuickClientDialog from "@/components/QuickClientDialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Props {
   open?: boolean;
@@ -66,6 +71,14 @@ export default function BookingFormDialog({
   const { data: clients } = useClients();
   const createBooking = useCreateBooking();
   const checkAvailability = useCheckAvailability();
+  const createClient = useCreateClient();
+  const updateClient = useUpdateClient();
+
+  const [quickClientOpen, setQuickClientOpen] = useState(false);
+  /** When the user just saved a booking that used a walk-in client, we ask
+   *  whether they want to promote it to a real client. */
+  const [walkInPrompt, setWalkInPrompt] = useState<{ clientId: string } | null>(null);
+  const [walkInRealName, setWalkInRealName] = useState("");
 
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(BookingSchema),
@@ -161,6 +174,12 @@ export default function BookingFormDialog({
           style: "currency", currency: "COP", minimumFractionDigits: 0,
         }).format(totals.totalCOP)}`,
       });
+      // If this booking used a walk-in client, prompt to convert it.
+      const usedClient = (clients ?? []).find((c) => c.id === values.clientId);
+      if (usedClient && usedClient.name.startsWith("Walk-in ")) {
+        setWalkInPrompt({ clientId: usedClient.id });
+        setWalkInRealName("");
+      }
       setOpen(false);
     } catch (err: any) {
       const mapped = applyBookingError(err, form.setError);
@@ -176,6 +195,52 @@ export default function BookingFormDialog({
         );
         if (stepIdx >= 0) setStep(stepIdx as 0 | 1 | 2);
       }
+    }
+  };
+
+  /** Create a temporary walk-in client and select it. */
+  const handleWalkIn = async () => {
+    const stamp = new Date().toLocaleTimeString("es-CO", {
+      hour: "2-digit", minute: "2-digit", hour12: false,
+    });
+    try {
+      const created = await createClient.mutateAsync({
+        name: `Walk-in ${stamp}`,
+        phone: null,
+        email: null,
+        notes: "Cliente walk-in temporal",
+      });
+      form.setValue("clientId", created.id, { shouldValidate: true });
+      form.setValue("source", "walk_in");
+      toast({
+        title: "Walk-in creado",
+        description: "Continúa con la reserva. Al guardar te preguntaremos si quieres registrar al cliente.",
+      });
+    } catch (err: any) {
+      toast({
+        title: "No se pudo crear walk-in",
+        description: err?.message ?? "Intenta de nuevo.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const promoteWalkIn = async () => {
+    if (!walkInPrompt) return;
+    const name = walkInRealName.trim();
+    if (name.length < 2) {
+      toast({ title: "Nombre inválido", description: "Mínimo 2 caracteres.", variant: "destructive" });
+      return;
+    }
+    try {
+      await updateClient.mutateAsync({
+        id: walkInPrompt.clientId,
+        data: { name, notes: null },
+      });
+      toast({ title: "Cliente registrado", description: `${name} ya quedó en tu base de clientes.` });
+      setWalkInPrompt(null);
+    } catch (err: any) {
+      toast({ title: "Error", description: err?.message ?? "Intenta de nuevo.", variant: "destructive" });
     }
   };
 
@@ -219,6 +284,8 @@ export default function BookingFormDialog({
               resources={resources ?? []}
               clients={clients ?? []}
               conflicts={conflicts}
+              onCreateNewClient={() => setQuickClientOpen(true)}
+              onWalkInClient={handleWalkIn}
               mobileStep={isMobile ? step : undefined}
             />
 
@@ -272,6 +339,42 @@ export default function BookingFormDialog({
           </form>
         </Form>
       </DialogContent>
+
+      <QuickClientDialog
+        open={quickClientOpen}
+        onOpenChange={setQuickClientOpen}
+        onCreated={(c) => {
+          form.setValue("clientId", c.id, { shouldValidate: true });
+        }}
+      />
+
+      <AlertDialog open={!!walkInPrompt} onOpenChange={(v) => !v && setWalkInPrompt(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Guardar el walk-in como cliente real?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Escribe el nombre real del cliente para conservarlo en tu base. Si no, quedará como
+              "Walk-in" temporal y podrás editarlo después.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <input
+            type="text"
+            autoFocus
+            placeholder="Nombre real del cliente"
+            value={walkInRealName}
+            onChange={(e) => setWalkInRealName(e.target.value)}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setWalkInPrompt(null)}>
+              No, dejar como walk-in
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={promoteWalkIn}>
+              Guardar cliente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
