@@ -64,6 +64,15 @@ interface Props {
   onCancelStatusIntercept?: () => void;
 }
 
+const STEP_LABELS = ["Cliente", "Servicios", "Horario"] as const;
+
+/* Fields validated per step in mobile wizard */
+const STEP_FIELDS: Array<Array<keyof BookingFormValues>> = [
+  ["clientId", "nationality", "language"],
+  ["items"],
+  ["date", "startTime", "therapistId", "secondTherapistId", "resourceId", "source", "notes"],
+];
+
 export default function BookingFormFields({
   services, therapists, resources, clients,
   conflicts, showStatus = false, onCancelStatusIntercept,
