@@ -28,6 +28,7 @@ import {
 import type { ServiceWithDurations } from "@/hooks/useServices";
 import { useIsMobile } from "@/hooks/use-mobile";
 import ClientCombobox from "@/components/ClientCombobox";
+import ClientHistorySummary from "@/components/ClientHistorySummary";
 
 function formatCOP(n: number) {
   return new Intl.NumberFormat("es-CO", {
@@ -59,10 +60,14 @@ interface Props {
   services: ServiceWithDurations[];
   therapists: { id: string; name: string; is_available: boolean | null }[];
   resources: { id: string; name: string; type: string; is_active: boolean | null }[];
-  clients: { id: string; name: string; phone: string | null; email?: string | null }[];
+  clients: { id: string; name: string; phone: string | null; email?: string | null; notes?: string | null }[];
   conflicts: string[];
   showStatus?: boolean;
   onCancelStatusIntercept?: () => void;
+  /** Open quick "new client" modal from the combobox footer. */
+  onCreateNewClient?: () => void;
+  /** Create + auto-select a temporary walk-in client. */
+  onWalkInClient?: () => void;
 }
 
 const STEP_LABELS = ["Cliente", "Servicios", "Horario"] as const;
@@ -77,6 +82,7 @@ const STEP_FIELDS: Array<Array<keyof BookingFormValues>> = [
 export default function BookingFormFields({
   services, therapists, resources, clients,
   conflicts, showStatus = false, onCancelStatusIntercept,
+  onCreateNewClient, onWalkInClient,
   mobileStep,
 }: Props & { mobileStep?: 0 | 1 | 2 }) {
   const form = useFormContext<BookingFormValues>();
@@ -217,12 +223,17 @@ export default function BookingFormFields({
                 value={field.value}
                 onChange={field.onChange}
                 clients={clients}
+                onCreateNew={onCreateNewClient}
+                onWalkIn={onWalkInClient}
               />
             </FormControl>
             <FormMessage />
           </FormItem>
         )}
       />
+
+      {/* Quick history summary for the selected client */}
+      <ClientHistorySummaryWrapper clients={clients} />
 
       {/* Nationality + Language */}
       <div className="grid grid-cols-2 gap-3">
