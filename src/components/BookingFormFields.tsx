@@ -169,7 +169,7 @@ export default function BookingFormFields({
       )}
 
       {/* Status (edit mode only) */}
-      {showStatus && (
+      {showStatus && showSection(0) && (
         <FormField
           control={control}
           name="status"
@@ -201,7 +201,8 @@ export default function BookingFormFields({
         />
       )}
 
-      {/* Client */}
+      {/* ============= STEP 0: CLIENT ============= */}
+      {showSection(0) && (<>
       <FormField
         control={control}
         name="clientId"
@@ -266,8 +267,10 @@ export default function BookingFormFields({
           )}
         />
       </div>
+      </>)}
 
-      {/* CART */}
+      {/* ============= STEP 1: CART ============= */}
+      {showSection(1) && (
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <FormLabel className="flex items-center gap-2 text-base font-semibold">
