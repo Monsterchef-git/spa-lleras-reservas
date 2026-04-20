@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { QuickClientSchema, type QuickClientValues } from "@/lib/schemas";
 import { useCreateClient } from "@/hooks/useClients";
 import { Globe, Languages, User, Phone, Mail, Sparkles } from "lucide-react";
+import CountryCombobox from "@/components/CountryCombobox";
 
 interface Props {
   open: boolean;
@@ -157,7 +158,7 @@ export default function QuickClientDialog({
                       <Globe className="h-3.5 w-3.5 text-primary" /> Nacionalidad
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="Colombia, USA..." autoComplete="off" {...field} />
+                      <CountryCombobox value={field.value ?? ""} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
