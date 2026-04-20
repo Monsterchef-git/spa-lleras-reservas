@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { Plus } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, User, ShoppingCart, CalendarClock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useServices } from "@/hooks/useServices";
 import { useTherapists } from "@/hooks/useTherapists";
@@ -13,6 +13,8 @@ import { useClients } from "@/hooks/useClients";
 import { useCreateBooking, useCheckAvailability } from "@/hooks/useBookings";
 import { BookingSchema, calculateEndTime, type BookingFormValues } from "@/lib/schemas";
 import BookingFormFields, { nextItemUid, useCartTotals } from "@/components/BookingFormFields";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 interface Props {
   open?: boolean;
@@ -53,6 +55,8 @@ export default function BookingFormDialog({
     if (!isControlled) setInternalOpen(v);
     onOpenChange?.(v);
   };
+  const isMobile = useIsMobile();
+  const [step, setStep] = useState<0 | 1 | 2>(0);
 
   const { toast } = useToast();
   const { data: services } = useServices();
@@ -88,6 +92,7 @@ export default function BookingFormDialog({
       startTime: initialStartTime ?? "",
     });
     setConflicts([]);
+    setStep(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
@@ -164,6 +169,17 @@ export default function BookingFormDialog({
   const submitting = form.formState.isSubmitting || createBooking.isPending;
   const hasErrors = Object.keys(form.formState.errors).length > 0;
 
+  const STEP_FIELDS_LOCAL: Array<Array<keyof BookingFormValues>> = [
+    ["clientId", "language"],
+    ["items"],
+    ["date", "startTime", "therapistId", "secondTherapistId", "resourceId"],
+  ];
+
+  const goNext = async () => {
+    const ok = await form.trigger(STEP_FIELDS_LOCAL[step]);
+    if (ok && step < 2) setStep((s) => (s + 1) as 0 | 1 | 2);
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {!hideTrigger && (
@@ -173,10 +189,15 @@ export default function BookingFormDialog({
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[92vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="font-heading text-xl">Nueva Reserva</DialogTitle>
         </DialogHeader>
+
+        {isMobile && (
+          <WizardProgress step={step} />
+        )}
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 mt-2">
             <BookingFormFields
@@ -185,30 +206,93 @@ export default function BookingFormDialog({
               resources={resources ?? []}
               clients={clients ?? []}
               conflicts={conflicts}
+              mobileStep={isMobile ? step : undefined}
             />
 
-            <div className="flex gap-3 pt-2">
-              <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)}>
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                variant="spa"
-                className="flex-1"
-                disabled={submitting || conflicts.length > 0 || hasErrors}
-              >
-                {submitting
-                  ? "Creando..."
-                  : conflicts.length > 0
-                    ? "Conflictos pendientes"
-                    : hasErrors
-                      ? "Revisa los campos"
-                      : "Crear Reserva"}
-              </Button>
-            </div>
+            {isMobile ? (
+              <div className="flex gap-2 pt-2 sticky bottom-0 bg-background/95 backdrop-blur py-2 -mx-4 px-4 border-t">
+                {step > 0 ? (
+                  <Button type="button" variant="outline" className="flex-1 gap-1" onClick={() => setStep((s) => (s - 1) as 0 | 1 | 2)}>
+                    <ChevronLeft className="h-4 w-4" /> Anterior
+                  </Button>
+                ) : (
+                  <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)}>
+                    Cancelar
+                  </Button>
+                )}
+                {step < 2 ? (
+                  <Button type="button" variant="spa" className="flex-1 gap-1" onClick={goNext}>
+                    Siguiente <ChevronRight className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button
+                    type="submit"
+                    variant="spa"
+                    className="flex-1"
+                    disabled={submitting || conflicts.length > 0 || hasErrors}
+                  >
+                    {submitting ? "Creando..." : conflicts.length > 0 ? "Conflictos" : hasErrors ? "Revisa campos" : "Crear Reserva"}
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="flex gap-3 pt-2">
+                <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  variant="spa"
+                  className="flex-1"
+                  disabled={submitting || conflicts.length > 0 || hasErrors}
+                >
+                  {submitting
+                    ? "Creando..."
+                    : conflicts.length > 0
+                      ? "Conflictos pendientes"
+                      : hasErrors
+                        ? "Revisa los campos"
+                        : "Crear Reserva"}
+                </Button>
+              </div>
+            )}
           </form>
         </Form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function WizardProgress({ step }: { step: 0 | 1 | 2 }) {
+  const steps = [
+    { label: "Cliente", icon: User },
+    { label: "Servicios", icon: ShoppingCart },
+    { label: "Horario", icon: CalendarClock },
+  ];
+  return (
+    <div className="flex items-center gap-2 px-1 pt-2" role="progressbar" aria-valuenow={step + 1} aria-valuemin={1} aria-valuemax={3}>
+      {steps.map((s, i) => {
+        const Icon = s.icon;
+        const active = i === step;
+        const done = i < step;
+        return (
+          <div key={s.label} className="flex-1 flex items-center gap-2">
+            <div className={cn(
+              "flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-colors",
+              active && "bg-primary text-primary-foreground",
+              done && "bg-primary/15 text-primary",
+              !active && !done && "bg-muted text-muted-foreground",
+            )}>
+              <Icon className="h-3.5 w-3.5" />
+              <span className="hidden xs:inline">{s.label}</span>
+              <span className="xs:hidden">{i + 1}</span>
+            </div>
+            {i < steps.length - 1 && (
+              <div className={cn("flex-1 h-0.5 rounded-full", done ? "bg-primary" : "bg-muted")} />
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
