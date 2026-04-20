@@ -9,12 +9,14 @@ import "moment/locale/es";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
 import { useCallback, useMemo, useState } from "react";
+import { useEffect } from "react";
 import { useBookings, useUpdateBooking, type Booking } from "@/hooks/useBookings";
 import { useTherapists } from "@/hooks/useTherapists";
 import { useResources } from "@/hooks/useResources";
 import BookingFormDialog from "@/components/BookingFormDialog";
 import BookingEditDialog from "@/components/BookingEditDialog";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 moment.locale("es");
 const localizer = momentLocalizer(moment);
@@ -91,9 +93,20 @@ export default function DashboardPage() {
   const { data: therapists, isLoading: loadingT } = useTherapists();
   const { data: resources, isLoading: loadingR } = useResources();
   const updateBooking = useUpdateBooking();
+  const isMobile = useIsMobile();
 
-  const [view, setView] = useState<(typeof Views)[keyof typeof Views]>(Views.WEEK);
+  const [view, setView] = useState<(typeof Views)[keyof typeof Views]>(
+    isMobile ? Views.AGENDA : Views.WEEK,
+  );
   const [date, setDate] = useState(new Date());
+
+  /* When viewport switches to mobile, force agenda view */
+  useEffect(() => {
+    if (isMobile && (view === Views.WEEK || view === Views.MONTH)) {
+      setView(Views.AGENDA);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMobile]);
 
   // Interactive dialogs
   const [createOpen, setCreateOpen] = useState(false);
@@ -431,10 +444,10 @@ export default function DashboardPage() {
                 onNavigate={setDate}
                 view={view}
                 onView={setView}
-                views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
+                views={isMobile ? [Views.DAY, Views.AGENDA] : [Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
                 startAccessor="start"
                 endAccessor="end"
-                style={{ height: 600 }}
+                style={{ height: isMobile ? 480 : 600 }}
                 eventPropGetter={eventStyleGetter}
                 messages={calendarMessages}
                 min={new Date(0, 0, 0, 7, 0)}
@@ -465,7 +478,40 @@ export default function DashboardPage() {
             {m.todayBookings.length === 0 ? (
               <p className="text-sm text-muted-foreground py-4 text-center">No hay reservas para hoy</p>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+              {/* Mobile: stacked cards */}
+              <div className="md:hidden divide-y divide-border">
+                {m.todayBookings
+                  .sort((a, b) => (a.start_time ?? "").localeCompare(b.start_time ?? ""))
+                  .map((b) => {
+                    const sc = statusConfig[b.status ?? "pendiente"];
+                    const serviceDisplay = b.booking_items?.length
+                      ? b.booking_items.map((i) => i.services?.name ?? "").join(", ")
+                      : b.services?.name ?? "—";
+                    return (
+                      <div key={b.id} className="py-3 flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium text-sm">
+                            {(b.start_time ?? "").slice(0, 5)} – {(b.end_time ?? "").slice(0, 5)}
+                          </div>
+                          <div className="text-sm">{b.clients?.name ?? "—"}</div>
+                          <div className="text-xs text-muted-foreground truncate">{serviceDisplay}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {b.therapist?.name ?? "—"} · {b.resources?.name ?? "—"}
+                          </div>
+                          {b.price_cop != null && (
+                            <div className="text-xs font-medium mt-0.5">{formatCOP(b.price_cop)}</div>
+                          )}
+                        </div>
+                        <Badge variant="outline" className={sc?.className}>
+                          {statusLabels[b.status ?? "pendiente"]}
+                        </Badge>
+                      </div>
+                    );
+                  })}
+              </div>
+              {/* Desktop: table */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border">
@@ -509,6 +555,7 @@ export default function DashboardPage() {
                   </tbody>
                 </table>
               </div>
+              </>
             )}
           </CardContent>
         </Card>

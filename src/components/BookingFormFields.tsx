@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useFormContext, useFieldArray, useWatch } from "react-hook-form";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -17,7 +17,8 @@ import {
 } from "@/components/ui/form";
 import {
   Plus, Globe, Languages, DollarSign, Trash2, ShoppingCart, Sparkles,
-  Clock, AlertTriangle, ShieldAlert, CalendarIcon,
+  Clock, AlertTriangle, ShieldAlert, CalendarIcon, ChevronLeft, ChevronRight,
+  User, CalendarClock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -25,6 +26,7 @@ import {
   SPA_OPEN_TIME, SPA_CLOSE_TIME, todayISO,
 } from "@/lib/schemas";
 import type { ServiceWithDurations } from "@/hooks/useServices";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 function formatCOP(n: number) {
   return new Intl.NumberFormat("es-CO", {
@@ -62,10 +64,20 @@ interface Props {
   onCancelStatusIntercept?: () => void;
 }
 
+const STEP_LABELS = ["Cliente", "Servicios", "Horario"] as const;
+
+/* Fields validated per step in mobile wizard */
+const STEP_FIELDS: Array<Array<keyof BookingFormValues>> = [
+  ["clientId", "nationality", "language"],
+  ["items"],
+  ["date", "startTime", "therapistId", "secondTherapistId", "resourceId", "source", "notes"],
+];
+
 export default function BookingFormFields({
   services, therapists, resources, clients,
   conflicts, showStatus = false, onCancelStatusIntercept,
-}: Props) {
+  mobileStep,
+}: Props & { mobileStep?: 0 | 1 | 2 }) {
   const form = useFormContext<BookingFormValues>();
   const { control, setValue, watch } = form;
 
@@ -136,6 +148,10 @@ export default function BookingFormFields({
 
   const dateValue = watch("date");
 
+  /* Helper: in wizard mode, only render the current step */
+  const showSection = (step: 0 | 1 | 2) =>
+    mobileStep === undefined || mobileStep === step;
+
   return (
     <div className="space-y-5">
       {/* Conflict warnings */}
@@ -153,7 +169,7 @@ export default function BookingFormFields({
       )}
 
       {/* Status (edit mode only) */}
-      {showStatus && (
+      {showStatus && showSection(0) && (
         <FormField
           control={control}
           name="status"
@@ -185,7 +201,8 @@ export default function BookingFormFields({
         />
       )}
 
-      {/* Client */}
+      {/* ============= STEP 0: CLIENT ============= */}
+      {showSection(0) && (<>
       <FormField
         control={control}
         name="clientId"
@@ -250,8 +267,10 @@ export default function BookingFormFields({
           )}
         />
       </div>
+      </>)}
 
-      {/* CART */}
+      {/* ============= STEP 1: CART ============= */}
+      {showSection(1) && (
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <FormLabel className="flex items-center gap-2 text-base font-semibold">
@@ -461,8 +480,10 @@ export default function BookingFormFields({
           </Card>
         )}
       </div>
+      )}
 
-      {/* Date + Time */}
+      {/* ============= STEP 2: SCHEDULE ============= */}
+      {showSection(2) && (<>
       <div className="grid grid-cols-2 gap-3">
         <FormField
           control={control}
@@ -660,6 +681,7 @@ export default function BookingFormFields({
           </FormItem>
         )}
       />
+      </>)}
 
       {/* Always-visible final summary */}
       <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5 sticky bottom-0">

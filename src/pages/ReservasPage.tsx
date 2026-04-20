@@ -198,7 +198,88 @@ export default function ReservasPage() {
         {/* Table */}
         <Card className="border-border/50 shadow-sm">
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
+            {/* Mobile: stacked cards */}
+            <div className="md:hidden divide-y divide-border">
+              {filtered.length === 0 && (
+                <div className="py-8 text-center text-sm text-muted-foreground">
+                  {search || hasActiveFilters
+                    ? "No se encontraron reservas con los filtros seleccionados"
+                    : "No hay reservas registradas."}
+                </div>
+              )}
+              {filtered.map((b) => (
+                <div
+                  key={b.id}
+                  className="p-4 hover:bg-muted/20 transition-colors cursor-pointer"
+                  onClick={() => { setEditBooking(b); setEditOpen(true); }}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium truncate">{b.clients?.name ?? "—"}</div>
+                      <div className="text-xs text-muted-foreground truncate">{getServiceDisplay(b)}</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {b.booking_date} · {b.start_time?.slice(0,5)} - {b.end_time?.slice(0,5)}
+                      </div>
+                      {b.therapist?.name && (
+                        <div className="text-xs text-muted-foreground">👤 {b.therapist.name}</div>
+                      )}
+                      {b.price_cop != null && (
+                        <div className="text-sm font-medium mt-1">{formatCOP(b.price_cop)}</div>
+                      )}
+                    </div>
+                    <Badge variant="outline" className={statusClasses[b.status ?? "pendiente"]}>
+                      {statusLabels[b.status ?? "pendiente"]}
+                    </Badge>
+                  </div>
+                  <div className="flex gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
+                    <Button variant="outline" size="sm" className="flex-1 gap-1.5 h-8" onClick={() => { setEditBooking(b); setEditOpen(true); }}>
+                      <Pencil className="h-3.5 w-3.5" /> Editar
+                    </Button>
+                    <Select value={b.status ?? "pendiente"} onValueChange={(v) => handleStatusChange(b, v as any)}>
+                      <SelectTrigger className="flex-1 h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(statusLabels).map(([k, v]) => (
+                          <SelectItem key={k} value={k}>{v}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5 text-destructive" />
+                            ¿Eliminar reserva permanentemente?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription className="space-y-2">
+                            <span className="block">
+                              Vas a eliminar la reserva de <strong>{b.clients?.name ?? "cliente"}</strong> del{" "}
+                              <strong>{b.booking_date}</strong> a las <strong>{b.start_time?.slice(0,5)}</strong>.
+                            </span>
+                            <span className="block bg-destructive/10 border border-destructive/30 rounded-md p-2 text-xs text-destructive">
+                              Esta acción <strong>no se puede deshacer</strong>.
+                            </span>
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Volver</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDelete(b.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            Sí, eliminar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/30">

@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { History } from "lucide-react";
+import { History, ChevronLeft, ChevronRight, User, ShoppingCart, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
 import { useServices } from "@/hooks/useServices";
 import { useTherapists } from "@/hooks/useTherapists";
@@ -16,6 +16,8 @@ import { BookingSchema, calculateEndTime, type BookingFormValues } from "@/lib/s
 import BookingFormFields, { nextItemUid, useCartTotals } from "@/components/BookingFormFields";
 import BookingHistoryTab from "@/components/BookingHistoryTab";
 import CancelBookingDialog from "@/components/CancelBookingDialog";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 interface Props {
   booking: Booking | null;
@@ -77,6 +79,8 @@ export default function BookingEditDialog({ booking, open, onOpenChange }: Props
   const { data: clients } = useClients();
   const updateBooking = useUpdateBooking();
   const checkAvailability = useCheckAvailability();
+  const isMobile = useIsMobile();
+  const [step, setStep] = useState<0 | 1 | 2>(0);
 
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(BookingSchema),
@@ -101,6 +105,7 @@ export default function BookingEditDialog({ booking, open, onOpenChange }: Props
     if (!booking) return;
     form.reset(bookingToValues(booking));
     setConflicts([]);
+    setStep(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [booking?.id]);
 
@@ -172,9 +177,19 @@ export default function BookingEditDialog({ booking, open, onOpenChange }: Props
   const submitting = form.formState.isSubmitting || updateBooking.isPending;
   const hasErrors = Object.keys(form.formState.errors).length > 0;
 
+  const STEP_FIELDS_LOCAL: Array<Array<keyof BookingFormValues>> = [
+    ["clientId", "language"],
+    ["items"],
+    ["date", "startTime", "therapistId", "secondTherapistId", "resourceId"],
+  ];
+  const goNext = async () => {
+    const ok = await form.trigger(STEP_FIELDS_LOCAL[step]);
+    if (ok && step < 2) setStep((s) => (s + 1) as 0 | 1 | 2);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[92vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="font-heading text-xl">Editar Reserva</DialogTitle>
         </DialogHeader>
@@ -189,6 +204,7 @@ export default function BookingEditDialog({ booking, open, onOpenChange }: Props
             <BookingHistoryTab bookingId={booking?.id} />
           </TabsContent>
           <TabsContent value="form">
+            {isMobile && <EditWizardProgress step={step} />}
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 mt-2">
                 <BookingFormFields
@@ -199,27 +215,51 @@ export default function BookingEditDialog({ booking, open, onOpenChange }: Props
                   conflicts={conflicts}
                   showStatus
                   onCancelStatusIntercept={() => setPendingCancel(true)}
+                  mobileStep={isMobile ? step : undefined}
                 />
 
-                <div className="flex gap-3 pt-2">
-                  <Button type="button" variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
-                    Cancelar
-                  </Button>
-                  <Button
-                    type="submit"
-                    variant="spa"
-                    className="flex-1"
-                    disabled={submitting || conflicts.length > 0 || hasErrors}
-                  >
-                    {submitting
-                      ? "Guardando..."
-                      : conflicts.length > 0
-                        ? "Conflictos pendientes"
-                        : hasErrors
-                          ? "Revisa los campos"
-                          : "Guardar Cambios"}
-                  </Button>
-                </div>
+                {isMobile ? (
+                  <div className="flex gap-2 pt-2 sticky bottom-0 bg-background/95 backdrop-blur py-2 -mx-4 px-4 border-t">
+                    {step > 0 ? (
+                      <Button type="button" variant="outline" className="flex-1 gap-1" onClick={() => setStep((s) => (s - 1) as 0 | 1 | 2)}>
+                        <ChevronLeft className="h-4 w-4" /> Anterior
+                      </Button>
+                    ) : (
+                      <Button type="button" variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
+                        Cancelar
+                      </Button>
+                    )}
+                    {step < 2 ? (
+                      <Button type="button" variant="spa" className="flex-1 gap-1" onClick={goNext}>
+                        Siguiente <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    ) : (
+                      <Button type="submit" variant="spa" className="flex-1" disabled={submitting || conflicts.length > 0 || hasErrors}>
+                        {submitting ? "Guardando..." : conflicts.length > 0 ? "Conflictos" : hasErrors ? "Revisa campos" : "Guardar"}
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex gap-3 pt-2">
+                    <Button type="button" variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="spa"
+                      className="flex-1"
+                      disabled={submitting || conflicts.length > 0 || hasErrors}
+                    >
+                      {submitting
+                        ? "Guardando..."
+                        : conflicts.length > 0
+                          ? "Conflictos pendientes"
+                          : hasErrors
+                            ? "Revisa los campos"
+                            : "Guardar Cambios"}
+                    </Button>
+                  </div>
+                )}
               </form>
             </Form>
           </TabsContent>
@@ -252,5 +292,38 @@ export default function BookingEditDialog({ booking, open, onOpenChange }: Props
         />
       </DialogContent>
     </Dialog>
+  );
+}
+
+function EditWizardProgress({ step }: { step: 0 | 1 | 2 }) {
+  const steps = [
+    { label: "Cliente", icon: User },
+    { label: "Servicios", icon: ShoppingCart },
+    { label: "Horario", icon: CalendarClock },
+  ];
+  return (
+    <div className="flex items-center gap-2 px-1 pt-3" role="progressbar" aria-valuenow={step + 1} aria-valuemin={1} aria-valuemax={3}>
+      {steps.map((s, i) => {
+        const Icon = s.icon;
+        const active = i === step;
+        const done = i < step;
+        return (
+          <div key={s.label} className="flex-1 flex items-center gap-2">
+            <div className={cn(
+              "flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-colors",
+              active && "bg-primary text-primary-foreground",
+              done && "bg-primary/15 text-primary",
+              !active && !done && "bg-muted text-muted-foreground",
+            )}>
+              <Icon className="h-3.5 w-3.5" />
+              <span>{s.label}</span>
+            </div>
+            {i < steps.length - 1 && (
+              <div className={cn("flex-1 h-0.5 rounded-full", done ? "bg-primary" : "bg-muted")} />
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
