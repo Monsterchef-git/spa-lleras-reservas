@@ -9,6 +9,7 @@ import "moment/locale/es";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
 import { useCallback, useMemo, useState } from "react";
+import { useEffect } from "react";
 import { useBookings, useUpdateBooking, type Booking } from "@/hooks/useBookings";
 import { useTherapists } from "@/hooks/useTherapists";
 import { useResources } from "@/hooks/useResources";
@@ -98,6 +99,14 @@ export default function DashboardPage() {
     isMobile ? Views.AGENDA : Views.WEEK,
   );
   const [date, setDate] = useState(new Date());
+
+  /* When viewport switches to mobile, force agenda view */
+  useEffect(() => {
+    if (isMobile && (view === Views.WEEK || view === Views.MONTH)) {
+      setView(Views.AGENDA);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMobile]);
 
   // Interactive dialogs
   const [createOpen, setCreateOpen] = useState(false);
@@ -435,10 +444,10 @@ export default function DashboardPage() {
                 onNavigate={setDate}
                 view={view}
                 onView={setView}
-                views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
+                views={isMobile ? [Views.DAY, Views.AGENDA] : [Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
                 startAccessor="start"
                 endAccessor="end"
-                style={{ height: 600 }}
+                style={{ height: isMobile ? 480 : 600 }}
                 eventPropGetter={eventStyleGetter}
                 messages={calendarMessages}
                 min={new Date(0, 0, 0, 7, 0)}
