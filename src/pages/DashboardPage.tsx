@@ -18,6 +18,7 @@ import { useTherapists } from "@/hooks/useTherapists";
 import { useResources } from "@/hooks/useResources";
 import BookingFormDialog from "@/components/BookingFormDialog";
 import BookingEditDialog from "@/components/BookingEditDialog";
+import UpcomingBookingsWidget from "@/components/UpcomingBookingsWidget";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -426,6 +427,9 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Upcoming 24h — quick-action widget */}
+        <UpcomingBookingsWidget />
 
         {/* Calendar */}
         <Card className="border-border/50 shadow-sm">
