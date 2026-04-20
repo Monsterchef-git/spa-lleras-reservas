@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useFormContext, useFieldArray, useWatch } from "react-hook-form";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -17,7 +17,8 @@ import {
 } from "@/components/ui/form";
 import {
   Plus, Globe, Languages, DollarSign, Trash2, ShoppingCart, Sparkles,
-  Clock, AlertTriangle, ShieldAlert, CalendarIcon,
+  Clock, AlertTriangle, ShieldAlert, CalendarIcon, ChevronLeft, ChevronRight,
+  User, CalendarClock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -25,6 +26,7 @@ import {
   SPA_OPEN_TIME, SPA_CLOSE_TIME, todayISO,
 } from "@/lib/schemas";
 import type { ServiceWithDurations } from "@/hooks/useServices";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 function formatCOP(n: number) {
   return new Intl.NumberFormat("es-CO", {
