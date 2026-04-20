@@ -29,6 +29,7 @@ import type { ServiceWithDurations } from "@/hooks/useServices";
 import { useIsMobile } from "@/hooks/use-mobile";
 import ClientCombobox from "@/components/ClientCombobox";
 import ClientHistorySummary from "@/components/ClientHistorySummary";
+import CountryCombobox from "@/components/CountryCombobox";
 
 function formatCOP(n: number) {
   return new Intl.NumberFormat("es-CO", {
@@ -246,7 +247,7 @@ export default function BookingFormFields({
                 <Globe className="h-3.5 w-3.5 text-primary" /> País / Nacionalidad
               </FormLabel>
               <FormControl>
-                <Input placeholder="Colombia, USA..." {...field} />
+                <CountryCombobox value={field.value ?? ""} onChange={field.onChange} />
               </FormControl>
               <FormMessage />
             </FormItem>
