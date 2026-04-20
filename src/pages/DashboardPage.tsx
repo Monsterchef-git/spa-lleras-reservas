@@ -15,6 +15,7 @@ import { useResources } from "@/hooks/useResources";
 import BookingFormDialog from "@/components/BookingFormDialog";
 import BookingEditDialog from "@/components/BookingEditDialog";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 moment.locale("es");
 const localizer = momentLocalizer(moment);
@@ -91,8 +92,11 @@ export default function DashboardPage() {
   const { data: therapists, isLoading: loadingT } = useTherapists();
   const { data: resources, isLoading: loadingR } = useResources();
   const updateBooking = useUpdateBooking();
+  const isMobile = useIsMobile();
 
-  const [view, setView] = useState<(typeof Views)[keyof typeof Views]>(Views.WEEK);
+  const [view, setView] = useState<(typeof Views)[keyof typeof Views]>(
+    isMobile ? Views.AGENDA : Views.WEEK,
+  );
   const [date, setDate] = useState(new Date());
 
   // Interactive dialogs
