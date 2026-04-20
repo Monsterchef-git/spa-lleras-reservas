@@ -480,8 +480,10 @@ export default function BookingFormFields({
           </Card>
         )}
       </div>
+      )}
 
-      {/* Date + Time */}
+      {/* ============= STEP 2: SCHEDULE ============= */}
+      {showSection(2) && (<>
       <div className="grid grid-cols-2 gap-3">
         <FormField
           control={control}
