@@ -478,7 +478,40 @@ export default function DashboardPage() {
             {m.todayBookings.length === 0 ? (
               <p className="text-sm text-muted-foreground py-4 text-center">No hay reservas para hoy</p>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+              {/* Mobile: stacked cards */}
+              <div className="md:hidden divide-y divide-border">
+                {m.todayBookings
+                  .sort((a, b) => (a.start_time ?? "").localeCompare(b.start_time ?? ""))
+                  .map((b) => {
+                    const sc = statusConfig[b.status ?? "pendiente"];
+                    const serviceDisplay = b.booking_items?.length
+                      ? b.booking_items.map((i) => i.services?.name ?? "").join(", ")
+                      : b.services?.name ?? "—";
+                    return (
+                      <div key={b.id} className="py-3 flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium text-sm">
+                            {(b.start_time ?? "").slice(0, 5)} – {(b.end_time ?? "").slice(0, 5)}
+                          </div>
+                          <div className="text-sm">{b.clients?.name ?? "—"}</div>
+                          <div className="text-xs text-muted-foreground truncate">{serviceDisplay}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {b.therapist?.name ?? "—"} · {b.resources?.name ?? "—"}
+                          </div>
+                          {b.price_cop != null && (
+                            <div className="text-xs font-medium mt-0.5">{formatCOP(b.price_cop)}</div>
+                          )}
+                        </div>
+                        <Badge variant="outline" className={sc?.className}>
+                          {statusLabels[b.status ?? "pendiente"]}
+                        </Badge>
+                      </div>
+                    );
+                  })}
+              </div>
+              {/* Desktop: table */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border">
@@ -522,6 +555,7 @@ export default function DashboardPage() {
                   </tbody>
                 </table>
               </div>
+              </>
             )}
           </CardContent>
         </Card>
