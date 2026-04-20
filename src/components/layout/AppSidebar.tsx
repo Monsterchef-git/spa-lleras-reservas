@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { UserPlus } from "lucide-react";
+import { useBookings } from "@/hooks/useBookings";
 
 const baseNavItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -39,6 +40,12 @@ export function AppSidebar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const navItems = user?.role === "admin" ? [...baseNavItems, ...adminNavItems] : baseNavItems;
+
+  /* WhatsApp pending counter — kept in sync via the realtime subscription
+     already wired inside useBookings(). */
+  const { data: bookings } = useBookings();
+  const whatsappPendingCount =
+    bookings?.filter((b) => b.status === "pendiente" && b.source === "whatsapp").length ?? 0;
 
   /* Close on route change (NavLink onClick already handles this for clicks,
      this catches programmatic navigation too) */
@@ -146,7 +153,15 @@ export function AppSidebar() {
                 )}
               >
                 <item.icon className="h-4.5 w-4.5" />
-                {item.label}
+                <span className="flex-1">{item.label}</span>
+                {item.to === "/reservas" && whatsappPendingCount > 0 && (
+                  <Badge
+                    className="h-5 min-w-5 px-1.5 text-[10px] font-bold bg-destructive text-destructive-foreground hover:bg-destructive border-transparent"
+                    aria-label={`${whatsappPendingCount} reservas pendientes de WhatsApp`}
+                  >
+                    {whatsappPendingCount}
+                  </Badge>
+                )}
               </NavLink>
             );
           })}
