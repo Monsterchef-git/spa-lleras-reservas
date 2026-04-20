@@ -76,7 +76,8 @@ const STEP_FIELDS: Array<Array<keyof BookingFormValues>> = [
 export default function BookingFormFields({
   services, therapists, resources, clients,
   conflicts, showStatus = false, onCancelStatusIntercept,
-}: Props) {
+  mobileStep,
+}: Props & { mobileStep?: 0 | 1 | 2 }) {
   const form = useFormContext<BookingFormValues>();
   const { control, setValue, watch } = form;
 
@@ -146,6 +147,10 @@ export default function BookingFormFields({
     });
 
   const dateValue = watch("date");
+
+  /* Helper: in wizard mode, only render the current step */
+  const showSection = (step: 0 | 1 | 2) =>
+    mobileStep === undefined || mobileStep === step;
 
   return (
     <div className="space-y-5">
