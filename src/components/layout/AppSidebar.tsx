@@ -96,7 +96,7 @@ export function AppSidebar() {
       >
         {/* Brand */}
         <div className="p-6 border-b border-sidebar-border flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-sidebar-primary/15 flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-full bg-sidebar-primary flex items-center justify-center shrink-0 shadow-sm">
             <img src="/spa_logo_blanco.png" alt="Spa Lleras" className="w-7 h-7 object-contain" />
           </div>
           <div className="min-w-0">
