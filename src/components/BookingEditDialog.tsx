@@ -18,6 +18,7 @@ import BookingHistoryTab from "@/components/BookingHistoryTab";
 import CancelBookingDialog from "@/components/CancelBookingDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { applyBookingError } from "@/lib/bookingErrors";
 
 interface Props {
   booking: Booking | null;
@@ -170,7 +171,16 @@ export default function BookingEditDialog({ booking, open, onOpenChange }: Props
       toast.success("Reserva actualizada correctamente");
       onOpenChange(false);
     } catch (err: any) {
-      toast.error(err.message);
+      const mapped = applyBookingError(err, form.setError);
+      toast.error(mapped.field ? "Conflicto al guardar" : "Error al actualizar", {
+        description: mapped.message,
+      });
+      if (isMobile && mapped.field) {
+        const stepIdx = STEP_FIELDS_LOCAL.findIndex((fs) =>
+          (fs as string[]).includes(mapped.field as string),
+        );
+        if (stepIdx >= 0) setStep(stepIdx as 0 | 1 | 2);
+      }
     }
   };
 

@@ -15,6 +15,7 @@ import { BookingSchema, calculateEndTime, type BookingFormValues } from "@/lib/s
 import BookingFormFields, { nextItemUid, useCartTotals } from "@/components/BookingFormFields";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { applyBookingError } from "@/lib/bookingErrors";
 
 interface Props {
   open?: boolean;
@@ -162,7 +163,19 @@ export default function BookingFormDialog({
       });
       setOpen(false);
     } catch (err: any) {
-      toast({ title: "Error al crear reserva", description: err.message, variant: "destructive" });
+      const mapped = applyBookingError(err, form.setError);
+      toast({
+        title: mapped.field ? "Conflicto al guardar" : "Error al crear reserva",
+        description: mapped.message,
+        variant: "destructive",
+      });
+      // If error maps to step 2 fields, jump to that step on mobile.
+      if (isMobile && mapped.field) {
+        const stepIdx = STEP_FIELDS_LOCAL.findIndex((fs) =>
+          (fs as string[]).includes(mapped.field as string),
+        );
+        if (stepIdx >= 0) setStep(stepIdx as 0 | 1 | 2);
+      }
     }
   };
 
