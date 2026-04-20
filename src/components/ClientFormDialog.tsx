@@ -59,7 +59,7 @@ export default function ClientFormDialog({ client, trigger, onSave }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="w-[95vw] sm:max-w-md max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-heading text-xl">
             {isEdit ? "Editar Cliente" : "Nuevo Cliente"}

@@ -12,7 +12,7 @@ import {
   X,
   Shield,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +39,22 @@ export function AppSidebar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const navItems = user?.role === "admin" ? [...baseNavItems, ...adminNavItems] : baseNavItems;
+
+  /* Close on route change (NavLink onClick already handles this for clicks,
+     this catches programmatic navigation too) */
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
+  /* Close on Escape key */
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mobileOpen]);
 
   const handleLogout = async () => {
     await logout();
