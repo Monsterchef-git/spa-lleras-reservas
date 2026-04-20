@@ -35,9 +35,10 @@ export const ClientSchema = z.object({
   email: z
     .string()
     .trim()
-    .min(1, "El email es obligatorio")
+    .max(255, "Máximo 255 caracteres")
     .email("Email inválido")
-    .max(255, "Máximo 255 caracteres"),
+    .optional()
+    .or(z.literal("")),
   phone: z
     .string()
     .trim()
@@ -52,6 +53,33 @@ export const ClientSchema = z.object({
     .or(z.literal("")),
 });
 export type ClientFormValues = z.infer<typeof ClientSchema>;
+
+/* ============================================================
+ * QUICK CLIENT SCHEMA (used inside the booking flow)
+ * Minimal fields, email truly optional.
+ * ============================================================ */
+export const QuickClientSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, "El nombre debe tener al menos 2 caracteres")
+    .max(100, "Máximo 100 caracteres"),
+  phone: z
+    .string()
+    .trim()
+    .min(5, "Ingresa un WhatsApp / teléfono válido")
+    .max(30, "Máximo 30 caracteres"),
+  email: z
+    .string()
+    .trim()
+    .max(255, "Máximo 255 caracteres")
+    .email("Email inválido")
+    .optional()
+    .or(z.literal("")),
+  nationality: z.string().trim().max(100).optional().or(z.literal("")),
+  language: z.enum(["en", "es"]),
+});
+export type QuickClientValues = z.infer<typeof QuickClientSchema>;
 
 /* ============================================================
  * BOOKING SCHEMA
