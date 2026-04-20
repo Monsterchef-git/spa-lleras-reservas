@@ -20,7 +20,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { applyBookingError } from "@/lib/bookingErrors";
 import QuickClientDialog from "@/components/QuickClientDialog";
-import { useState as useReactState } from "react";
 
 interface Props {
   booking: Booking | null;
@@ -302,6 +301,14 @@ export default function BookingEditDialog({ booking, open, onOpenChange }: Props
             } catch (err: any) {
               toast.error(err.message);
             }
+          }}
+        />
+
+        <QuickClientDialog
+          open={quickClientOpen}
+          onOpenChange={setQuickClientOpen}
+          onCreated={(c) => {
+            form.setValue("clientId", c.id, { shouldValidate: true });
           }}
         />
       </DialogContent>
