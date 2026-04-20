@@ -27,6 +27,7 @@ import {
 } from "@/lib/schemas";
 import type { ServiceWithDurations } from "@/hooks/useServices";
 import { useIsMobile } from "@/hooks/use-mobile";
+import ClientCombobox from "@/components/ClientCombobox";
 
 function formatCOP(n: number) {
   return new Intl.NumberFormat("es-CO", {
@@ -58,7 +59,7 @@ interface Props {
   services: ServiceWithDurations[];
   therapists: { id: string; name: string; is_available: boolean | null }[];
   resources: { id: string; name: string; type: string; is_active: boolean | null }[];
-  clients: { id: string; name: string; phone: string | null }[];
+  clients: { id: string; name: string; phone: string | null; email?: string | null }[];
   conflicts: string[];
   showStatus?: boolean;
   onCancelStatusIntercept?: () => void;
@@ -211,18 +212,13 @@ export default function BookingFormFields({
             <FormLabel>
               Cliente <span className="text-destructive">*</span>
             </FormLabel>
-            <Select value={field.value} onValueChange={field.onChange}>
-              <FormControl>
-                <SelectTrigger><SelectValue placeholder="Seleccionar cliente..." /></SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {clients.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}{c.phone ? ` — ${c.phone}` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <FormControl>
+              <ClientCombobox
+                value={field.value}
+                onChange={field.onChange}
+                clients={clients}
+              />
+            </FormControl>
             <FormMessage />
           </FormItem>
         )}

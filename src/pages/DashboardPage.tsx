@@ -1,7 +1,10 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { CalendarDays, Clock, Users, TrendingUp, CheckCircle, AlertCircle, XCircle, Timer, MessageCircle, DollarSign, Loader2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Calendar, momentLocalizer, Views, type Event, type SlotInfo } from "react-big-calendar";
 import withDragAndDrop from "react-big-calendar/lib/addons/dragAndDrop";
 import moment from "moment";
@@ -617,6 +620,30 @@ export default function DashboardPage() {
           onOpenChange={setEditOpen}
         />
       </div>
+
+      {/* Floating "Nueva Reserva" button — premium spa style.
+          Larger on mobile, compact pill on desktop. */}
+      <Button
+        type="button"
+        variant="spa"
+        onClick={() => {
+          setCreateDate(undefined);
+          setCreateTime(undefined);
+          setCreateOpen(true);
+        }}
+        aria-label="Nueva Reserva"
+        className={cn(
+          "fixed z-40 shadow-lg hover:shadow-xl transition-all",
+          "ring-2 ring-accent/40 hover:ring-accent/70",
+          // Mobile: round FAB bottom-right above safe area
+          "h-14 w-14 rounded-full p-0 bottom-6 right-4",
+          // Desktop: pill with label, sits above content
+          "md:h-12 md:w-auto md:rounded-full md:px-5 md:bottom-8 md:right-8 md:gap-2",
+        )}
+      >
+        <Plus className="h-6 w-6 md:h-5 md:w-5" />
+        <span className="hidden md:inline font-medium">Nueva Reserva</span>
+      </Button>
     </AppLayout>
   );
 }
