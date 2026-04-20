@@ -681,6 +681,7 @@ export default function BookingFormFields({
           </FormItem>
         )}
       />
+      </>)}
 
       {/* Always-visible final summary */}
       <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5 sticky bottom-0">
