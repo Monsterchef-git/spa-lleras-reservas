@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Check, ChevronsUpDown, Search, User } from "lucide-react";
+import { Check, ChevronsUpDown, Search, User, UserPlus, Footprints } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
@@ -20,6 +20,10 @@ interface Props {
   clients: ClientOption[];
   placeholder?: string;
   disabled?: boolean;
+  /** Open the "create new client" modal. */
+  onCreateNew?: () => void;
+  /** Create + select a temporary walk-in client. */
+  onWalkIn?: () => void;
 }
 
 /**
@@ -29,6 +33,7 @@ interface Props {
  */
 export default function ClientCombobox({
   value, onChange, clients, placeholder = "Buscar cliente...", disabled,
+  onCreateNew, onWalkIn,
 }: Props) {
   const [open, setOpen] = useState(false);
 
@@ -122,6 +127,38 @@ export default function ClientCombobox({
               })}
             </CommandGroup>
           </CommandList>
+          {(onCreateNew || onWalkIn) && (
+            <div className="border-t p-2 flex flex-col gap-1.5 bg-muted/30">
+              {onCreateNew && (
+                <Button
+                  type="button"
+                  variant="spa"
+                  size="sm"
+                  className="w-full justify-start gap-2 h-9"
+                  onClick={() => {
+                    setOpen(false);
+                    onCreateNew();
+                  }}
+                >
+                  <UserPlus className="h-4 w-4" /> Crear cliente nuevo
+                </Button>
+              )}
+              {onWalkIn && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-start gap-2 h-9 border-dashed"
+                  onClick={() => {
+                    setOpen(false);
+                    onWalkIn();
+                  }}
+                >
+                  <Footprints className="h-4 w-4 text-accent" /> Cliente Walk-in (sin registrar)
+                </Button>
+              )}
+            </div>
+          )}
         </Command>
       </PopoverContent>
     </Popover>
