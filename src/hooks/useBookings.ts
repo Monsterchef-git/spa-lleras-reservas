@@ -19,17 +19,28 @@ export type Booking = Tables<"bookings"> & {
 export function useBookings() {
   const qc = useQueryClient();
 
-  // Realtime subscription: invalidate query on any change to bookings or booking_items
+  /* Realtime subscription: invalidate query on any change to bookings or booking_items.
+     Use a unique channel name per hook instance to avoid the
+     "cannot add postgres_changes callbacks ... after subscribe()" error that
+     happens when several components mount this hook and reuse the same channel name. */
   useEffect(() => {
-    const channel = supabase
-      .channel("bookings-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, () => {
-        qc.invalidateQueries({ queryKey: ["bookings"] });
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "booking_items" }, () => {
-        qc.invalidateQueries({ queryKey: ["bookings"] });
-      })
+    const channelName = `bookings-realtime-${Math.random().toString(36).slice(2, 10)}`;
+    const channel = supabase.channel(channelName);
+
+    // Attach ALL listeners BEFORE calling subscribe()
+    channel
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "bookings" },
+        () => qc.invalidateQueries({ queryKey: ["bookings"] }),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "booking_items" },
+        () => qc.invalidateQueries({ queryKey: ["bookings"] }),
+      )
       .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
     };
