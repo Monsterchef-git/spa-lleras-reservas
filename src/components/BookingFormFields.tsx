@@ -738,3 +738,24 @@ export function useCartTotals(
     return { totalMinutes: mins, totalCOP: cop, totalUSD: usd };
   }, [items, services]);
 }
+
+/** Reads clientId from the surrounding form and renders the history panel
+ *  for the matching client. Hidden when nothing is selected or when the
+ *  selected client is a walk-in (we treat walk-ins as having no history yet,
+ *  but we still show the "Cliente nuevo · sin visitas previas" line). */
+function ClientHistorySummaryWrapper({
+  clients,
+}: {
+  clients: { id: string; name: string; notes?: string | null }[];
+}) {
+  const form = useFormContext<BookingFormValues>();
+  const clientId = useWatch({ control: form.control, name: "clientId" });
+  if (!clientId) return null;
+  const selected = clients.find((c) => c.id === clientId);
+  return (
+    <ClientHistorySummary
+      clientId={clientId}
+      note={selected?.notes ?? null}
+    />
+  );
+}
