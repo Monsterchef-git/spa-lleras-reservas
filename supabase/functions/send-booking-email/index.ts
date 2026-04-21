@@ -26,6 +26,7 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") ?? "";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 
@@ -173,6 +174,39 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // --- AuthN/AuthZ: require a valid JWT belonging to admin or staff. ---
+    const authHeader = req.headers.get("Authorization") ?? "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: userData, error: userErr } = await userClient.auth.getUser();
+    if (userErr || !userData?.user) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    // Confirm the caller has an admin or staff role before sending client emails.
+    const { data: roleRows } = await userClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userData.user.id);
+    const hasRole = (roleRows ?? []).some((r: { role: string }) =>
+      r.role === "admin" || r.role === "staff"
+    );
+    if (!hasRole) {
+      return new Response(
+        JSON.stringify({ error: "Forbidden" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const { bookingId, kind, force } = (await req.json()) as InvokePayload;
     if (!bookingId || !kind) {
       return new Response(

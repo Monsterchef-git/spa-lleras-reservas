@@ -86,7 +86,7 @@ export default function UsersAdminPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="password">Contraseña temporal</Label>
-                  <Input id="password" type="text" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mínimo 8 caracteres" />
+                  <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mínimo 8 caracteres" autoComplete="new-password" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="role">Rol</Label>
