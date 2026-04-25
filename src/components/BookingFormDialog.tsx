@@ -27,6 +27,8 @@ interface Props {
   onOpenChange?: (v: boolean) => void;
   initialDate?: string;
   initialStartTime?: string;
+  initialTherapistId?: string;
+  initialResourceId?: string;
   hideTrigger?: boolean;
 }
 
@@ -52,6 +54,8 @@ export default function BookingFormDialog({
   onOpenChange,
   initialDate,
   initialStartTime,
+  initialTherapistId,
+  initialResourceId,
   hideTrigger = false,
 }: Props = {}) {
   const [internalOpen, setInternalOpen] = useState(false);
@@ -104,6 +108,8 @@ export default function BookingFormDialog({
       ...defaults,
       date: initialDate ?? "",
       startTime: initialStartTime ?? "",
+      therapistId: initialTherapistId ?? "",
+      resourceId: initialResourceId ?? "",
     });
     setConflicts([]);
     setStep(0);
