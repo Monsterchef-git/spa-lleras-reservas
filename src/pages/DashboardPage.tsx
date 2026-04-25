@@ -19,6 +19,7 @@ import { useResources } from "@/hooks/useResources";
 import BookingFormDialog from "@/components/BookingFormDialog";
 import BookingEditDialog from "@/components/BookingEditDialog";
 import UpcomingBookingsWidget from "@/components/UpcomingBookingsWidget";
+import AvailabilityWidget from "@/components/AvailabilityWidget";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -430,6 +431,9 @@ export default function DashboardPage() {
 
         {/* Upcoming 24h — quick-action widget */}
         <UpcomingBookingsWidget />
+
+        {/* Availability + free time slots — quick scheduling widget */}
+        <AvailabilityWidget />
 
         {/* Calendar */}
         <Card className="border-border/50 shadow-sm">
