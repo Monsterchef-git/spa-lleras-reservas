@@ -436,13 +436,6 @@ export default function ConfiguracionPage() {
                 )}
               </div>
             ))}
-            {meta?.fields.length === 0 && (
-              <div className="text-center py-6 text-muted-foreground">
-                <Upload className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">Arrastra un archivo CSV o Excel aquí, o haz clic para seleccionar</p>
-                <Button variant="outline" size="sm" className="mt-3">Seleccionar archivo</Button>
-              </div>
-            )}
           </div>
           <Separator />
           <DialogFooter>
