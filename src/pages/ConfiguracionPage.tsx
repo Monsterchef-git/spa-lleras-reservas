@@ -13,9 +13,11 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import {
   Globe, MessageSquare, Mail, Calendar, Bell,
-  Save, RotateCcw, Settings2, Building2, Clock, Shield, FileSpreadsheet
+  Save, RotateCcw, Settings2, Building2, Clock, Shield, FileSpreadsheet, Info
 } from "lucide-react";
 import { BookingImportDialog } from "@/components/BookingImportDialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "spa_lleras_config";
 
@@ -76,7 +78,7 @@ const DEFAULT_CONFIG: SpaConfig = {
 
 const INTEGRATION_META = [
   {
-    key: "gcal", name: "Google Calendar", icon: Calendar,
+    key: "gcal", name: "Google Calendar", icon: Calendar, comingSoon: true,
     description: "Sincronización bidireccional de reservas con Google Calendar.",
     modalDescription: "Conecta tu cuenta de Google Calendar para sincronizar reservas automáticamente. Necesitas crear un proyecto en Google Cloud Console y habilitar la Calendar API.",
     fields: [
@@ -85,7 +87,7 @@ const INTEGRATION_META = [
     ],
   },
   {
-    key: "whatsapp", name: "WhatsApp Business API", icon: MessageSquare,
+    key: "whatsapp", name: "WhatsApp Business API", icon: MessageSquare, comingSoon: true,
     description: "Webhook vía Make.com para parsear mensajes y crear reservas.",
     modalDescription: "Configura la integración con WhatsApp Business API para recibir y responder mensajes de reservas automáticamente a través de Make.com o n8n.",
     fields: [
@@ -95,7 +97,7 @@ const INTEGRATION_META = [
     ],
   },
   {
-    key: "email", name: "Email / Gmail API", icon: Mail,
+    key: "email", name: "Email / Gmail API (SMTP personalizado)", icon: Mail, comingSoon: true,
     description: "Integración con Gmail para reservas por correo electrónico.",
     modalDescription: "Configura el servidor SMTP para enviar confirmaciones, recordatorios y notificaciones de reservas por correo electrónico.",
     fields: [
@@ -106,8 +108,8 @@ const INTEGRATION_META = [
     ],
   },
   {
-    key: "notifications", name: "Notificaciones Automáticas", icon: Bell,
-    description: "Recordatorios automáticos vía email y WhatsApp.",
+    key: "notifications", name: "Notificaciones Automáticas (Email)", icon: Bell, comingSoon: false,
+    description: "Confirmaciones, actualizaciones y recordatorio 24h por email (activo).",
     modalDescription: "Configura los canales de notificación para enviar recordatorios automáticos a los clientes antes de su cita.",
     fields: [
       { key: "emailEnabled", label: "Notificaciones por Email", placeholder: "", hint: "Enviar recordatorios por correo electrónico", type: "toggle" },
@@ -356,31 +358,61 @@ export default function ConfiguracionPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {INTEGRATION_META.map((int) => {
+            <TooltipProvider delayDuration={150}>
+            {INTEGRATION_META.map((int: any) => {
               const state = config.integrations[int.key] || { connected: false, lastSync: "", config: {} };
+              const isComingSoon = !!int.comingSoon;
               return (
-                <div key={int.key} className="flex items-center gap-4 p-4 rounded-lg border border-border/50 bg-card hover:shadow-sm transition-shadow">
+                <div key={int.key} className={cn(
+                  "flex items-center gap-4 p-4 rounded-lg border border-border/50 bg-card hover:shadow-sm transition-shadow",
+                  isComingSoon && "opacity-70"
+                )}>
                   <div className="p-2.5 rounded-lg bg-muted shrink-0">
                     <int.icon className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="font-medium text-sm">{int.name}</h3>
-                      <Badge variant={state.connected ? "default" : "secondary"} className={state.connected ? "bg-primary/90 text-primary-foreground text-[10px]" : "text-[10px]"}>
-                        {state.connected ? "Conectado" : "Desconectado"}
-                      </Badge>
+                      {isComingSoon ? (
+                        <Badge variant="secondary" className="text-[10px] bg-amber-100 text-amber-800 border-amber-200">
+                          Próximamente
+                        </Badge>
+                      ) : (
+                        <Badge variant="default" className="bg-emerald-600 text-white text-[10px]">
+                          Activo
+                        </Badge>
+                      )}
+                      {isComingSoon && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs">
+                            <p className="text-xs">Estamos trabajando en esta integración. Estará disponible en una próxima versión.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">{int.description}</p>
-                    {state.connected && state.lastSync && (
+                    {!isComingSoon && state.connected && state.lastSync && (
                       <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
                         <Clock className="h-3 w-3" /> Última sync: {state.lastSync}
                       </p>
                     )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <Switch checked={state.connected} onCheckedChange={(v) => toggleIntegration(int.key, v)} />
+                    <Switch
+                      checked={!isComingSoon && state.connected}
+                      onCheckedChange={(v) => toggleIntegration(int.key, v)}
+                      disabled={isComingSoon}
+                    />
                     {int.fields.length > 0 && (
-                      <Button variant="outline" size="sm" onClick={() => openIntegrationModal(int.key)}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openIntegrationModal(int.key)}
+                        disabled={isComingSoon}
+                      >
                         Configurar
                       </Button>
                     )}
@@ -388,6 +420,7 @@ export default function ConfiguracionPage() {
                 </div>
               );
             })}
+            </TooltipProvider>
           </CardContent>
         </Card>
 
