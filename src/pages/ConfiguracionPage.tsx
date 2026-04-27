@@ -13,9 +13,10 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import {
   Globe, MessageSquare, Mail, Calendar, Bell,
-  Save, RotateCcw, Settings2, Building2, Clock, Shield, FileSpreadsheet
+  Save, RotateCcw, Settings2, Building2, Clock, Shield, FileSpreadsheet, Info
 } from "lucide-react";
 import { BookingImportDialog } from "@/components/BookingImportDialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const STORAGE_KEY = "spa_lleras_config";
 
@@ -76,7 +77,7 @@ const DEFAULT_CONFIG: SpaConfig = {
 
 const INTEGRATION_META = [
   {
-    key: "gcal", name: "Google Calendar", icon: Calendar,
+    key: "gcal", name: "Google Calendar", icon: Calendar, comingSoon: true,
     description: "Sincronización bidireccional de reservas con Google Calendar.",
     modalDescription: "Conecta tu cuenta de Google Calendar para sincronizar reservas automáticamente. Necesitas crear un proyecto en Google Cloud Console y habilitar la Calendar API.",
     fields: [
@@ -85,7 +86,7 @@ const INTEGRATION_META = [
     ],
   },
   {
-    key: "whatsapp", name: "WhatsApp Business API", icon: MessageSquare,
+    key: "whatsapp", name: "WhatsApp Business API", icon: MessageSquare, comingSoon: true,
     description: "Webhook vía Make.com para parsear mensajes y crear reservas.",
     modalDescription: "Configura la integración con WhatsApp Business API para recibir y responder mensajes de reservas automáticamente a través de Make.com o n8n.",
     fields: [
@@ -95,7 +96,7 @@ const INTEGRATION_META = [
     ],
   },
   {
-    key: "email", name: "Email / Gmail API", icon: Mail,
+    key: "email", name: "Email / Gmail API (SMTP personalizado)", icon: Mail, comingSoon: true,
     description: "Integración con Gmail para reservas por correo electrónico.",
     modalDescription: "Configura el servidor SMTP para enviar confirmaciones, recordatorios y notificaciones de reservas por correo electrónico.",
     fields: [
@@ -106,8 +107,8 @@ const INTEGRATION_META = [
     ],
   },
   {
-    key: "notifications", name: "Notificaciones Automáticas", icon: Bell,
-    description: "Recordatorios automáticos vía email y WhatsApp.",
+    key: "notifications", name: "Notificaciones Automáticas (Email)", icon: Bell, comingSoon: false,
+    description: "Confirmaciones, actualizaciones y recordatorio 24h por email (activo).",
     modalDescription: "Configura los canales de notificación para enviar recordatorios automáticos a los clientes antes de su cita.",
     fields: [
       { key: "emailEnabled", label: "Notificaciones por Email", placeholder: "", hint: "Enviar recordatorios por correo electrónico", type: "toggle" },

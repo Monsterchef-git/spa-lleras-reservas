@@ -294,7 +294,7 @@ export default function AvailabilityWidget() {
                 Espacios Disponibles
               </CardTitle>
               <p className="text-xs text-muted-foreground mt-1 ml-8">
-                Selecciona un espacio disponible para agendar
+                Toca un espacio disponible para crear reserva
               </p>
             </div>
             <div className="inline-flex rounded-md border border-border bg-muted/30 p-0.5">
