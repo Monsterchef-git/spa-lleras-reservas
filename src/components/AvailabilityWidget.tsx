@@ -290,7 +290,7 @@ export default function AvailabilityWidget() {
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <CardTitle className="font-heading text-lg flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-accent" />
-              Disponibilidad Actual y Huecos Libres
+              Espacios Disponibles
             </CardTitle>
             <div className="inline-flex rounded-md border border-border bg-muted/30 p-0.5">
               <button
@@ -436,7 +436,7 @@ export default function AvailabilityWidget() {
           <section>
             <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-1.5">
               <Clock className="h-3.5 w-3.5" />
-              Próximos huecos libres
+              Espacios disponibles
               {slotSuggestions.length > 0 && (
                 <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1.5">
                   {slotSuggestions.length}
@@ -448,8 +448,8 @@ export default function AvailabilityWidget() {
               <div className="text-sm text-muted-foreground py-6 text-center border border-dashed border-border rounded-lg">
                 <CheckCircle2 className="h-6 w-6 mx-auto text-muted-foreground/60 mb-2" />
                 {filter === "next4"
-                  ? "No hay huecos libres en las próximas 4 horas."
-                  : "No quedan huecos libres hoy."}
+                  ? "No hay espacios disponibles en las próximas 4 horas."
+                  : "No quedan espacios disponibles hoy."}
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
