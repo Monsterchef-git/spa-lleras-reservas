@@ -1,5 +1,5 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import { CalendarDays, Clock, Users, TrendingUp, CheckCircle, AlertCircle, XCircle, MessageCircle, DollarSign, Loader2 } from "lucide-react";
+import { CalendarDays, Clock, Users, TrendingUp, MessageCircle, DollarSign, Loader2 } from "lucide-react";
 import { Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -46,13 +46,6 @@ const statusLabels: Record<string, string> = {
   confirmada: "Confirmada",
   cancelada: "Cancelada",
   completada: "Completada",
-};
-
-const statusConfig: Record<string, { icon: React.ElementType; className: string }> = {
-  completada: { icon: CheckCircle, className: "status-badge-completed" },
-  confirmada: { icon: CheckCircle, className: "status-badge-confirmed" },
-  pendiente: { icon: AlertCircle, className: "status-badge-pending" },
-  cancelada: { icon: XCircle, className: "status-badge-cancelled" },
 };
 
 const calendarMessages = {
@@ -189,22 +182,6 @@ export default function DashboardPage() {
       };
     });
   }, [bookings]);
-
-  // Resource occupancy for today
-  const resourceOccupancy = useMemo(() => {
-    if (!resources || !metrics) return [];
-    return resources.map((r) => {
-      const bookingsForResource = metrics.todayBookings.filter((b) => b.resource_id === r.id);
-      return {
-        ...r,
-        slots: bookingsForResource.map((b) => ({
-          start: (b.start_time ?? "").slice(0, 5),
-          end: (b.end_time ?? "").slice(0, 5),
-          client: b.clients?.name ?? "—",
-        })),
-      };
-    });
-  }, [resources, metrics]);
 
   const eventStyleGetter = useCallback((event: BookingEvent) => {
     const bg = statusColors[event.status] || "hsl(168, 45%, 40%)";
