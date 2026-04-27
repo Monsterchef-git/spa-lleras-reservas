@@ -357,31 +357,61 @@ export default function ConfiguracionPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {INTEGRATION_META.map((int) => {
+            <TooltipProvider delayDuration={150}>
+            {INTEGRATION_META.map((int: any) => {
               const state = config.integrations[int.key] || { connected: false, lastSync: "", config: {} };
+              const isComingSoon = !!int.comingSoon;
               return (
-                <div key={int.key} className="flex items-center gap-4 p-4 rounded-lg border border-border/50 bg-card hover:shadow-sm transition-shadow">
+                <div key={int.key} className={cn(
+                  "flex items-center gap-4 p-4 rounded-lg border border-border/50 bg-card hover:shadow-sm transition-shadow",
+                  isComingSoon && "opacity-70"
+                )}>
                   <div className="p-2.5 rounded-lg bg-muted shrink-0">
                     <int.icon className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="font-medium text-sm">{int.name}</h3>
-                      <Badge variant={state.connected ? "default" : "secondary"} className={state.connected ? "bg-primary/90 text-primary-foreground text-[10px]" : "text-[10px]"}>
-                        {state.connected ? "Conectado" : "Desconectado"}
-                      </Badge>
+                      {isComingSoon ? (
+                        <Badge variant="secondary" className="text-[10px] bg-amber-100 text-amber-800 border-amber-200">
+                          Próximamente
+                        </Badge>
+                      ) : (
+                        <Badge variant="default" className="bg-emerald-600 text-white text-[10px]">
+                          Activo
+                        </Badge>
+                      )}
+                      {isComingSoon && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs">
+                            <p className="text-xs">Estamos trabajando en esta integración. Estará disponible en una próxima versión.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">{int.description}</p>
-                    {state.connected && state.lastSync && (
+                    {!isComingSoon && state.connected && state.lastSync && (
                       <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
                         <Clock className="h-3 w-3" /> Última sync: {state.lastSync}
                       </p>
                     )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <Switch checked={state.connected} onCheckedChange={(v) => toggleIntegration(int.key, v)} />
+                    <Switch
+                      checked={!isComingSoon && state.connected}
+                      onCheckedChange={(v) => toggleIntegration(int.key, v)}
+                      disabled={isComingSoon}
+                    />
                     {int.fields.length > 0 && (
-                      <Button variant="outline" size="sm" onClick={() => openIntegrationModal(int.key)}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openIntegrationModal(int.key)}
+                        disabled={isComingSoon}
+                      >
                         Configurar
                       </Button>
                     )}
@@ -389,6 +419,7 @@ export default function ConfiguracionPage() {
                 </div>
               );
             })}
+            </TooltipProvider>
           </CardContent>
         </Card>
 
