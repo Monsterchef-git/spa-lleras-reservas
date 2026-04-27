@@ -13,8 +13,9 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import {
   Globe, MessageSquare, Mail, Calendar, Bell,
-  Save, RotateCcw, Settings2, Building2, Clock, Shield
+  Save, RotateCcw, Settings2, Building2, Clock, Shield, FileSpreadsheet
 } from "lucide-react";
+import { BookingImportDialog } from "@/components/BookingImportDialog";
 
 const STORAGE_KEY = "spa_lleras_config";
 
@@ -127,6 +128,7 @@ export default function ConfiguracionPage() {
   const [config, setConfig] = useState<SpaConfig>(loadConfig);
   const [integrationModal, setIntegrationModal] = useState<string | null>(null);
   const [modalFields, setModalFields] = useState<Record<string, string>>({});
+  const [importOpen, setImportOpen] = useState(false);
 
   const update = <K extends keyof SpaConfig>(key: K, value: SpaConfig[K]) => {
     setConfig((prev) => ({ ...prev, [key]: value }));
@@ -193,6 +195,9 @@ export default function ConfiguracionPage() {
             </p>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+              <FileSpreadsheet className="h-4 w-4 mr-1" /> Importar CSV/Excel
+            </Button>
             <Button variant="outline" size="sm" onClick={resetDefaults}>
               <RotateCcw className="h-4 w-4 mr-1" /> Restaurar
             </Button>
@@ -446,6 +451,8 @@ export default function ConfiguracionPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <BookingImportDialog open={importOpen} onOpenChange={setImportOpen} />
     </AppLayout>
   );
 }
