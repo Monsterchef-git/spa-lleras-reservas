@@ -28,6 +28,7 @@ interface SpaConfig {
   doubleBookingCheck: boolean;
   cancellationPolicy: string;
   depositPercent: number;
+  tipPercent: number;
   // Spa Info
   spaName: string;
   address: string;
@@ -53,6 +54,7 @@ const DEFAULT_CONFIG: SpaConfig = {
   doubleBookingCheck: true,
   cancellationPolicy: "Las cancelaciones deben realizarse con al menos 24 horas de anticipación. Cancelaciones tardías están sujetas a un cargo del 50% del valor del servicio. No-shows serán cobrados al 100%.",
   depositPercent: 30,
+  tipPercent: 10,
   spaName: "Spa Lleras",
   address: "Parque Lleras, Medellín, Colombia",
   phone: "+57 300 123 4567",
@@ -304,6 +306,18 @@ export default function ConfiguracionPage() {
               <div className="space-y-1.5">
                 <Label>Depósito requerido (%)</Label>
                 <Input type="number" min={0} max={100} value={config.depositPercent} onChange={(e) => update("depositPercent", Number(e.target.value))} />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>% Propina por defecto</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={config.tipPercent}
+                  onChange={(e) => update("tipPercent", Number(e.target.value))}
+                />
+                <p className="text-[11px] text-muted-foreground">Usado para calcular propinas estimadas en el Reporte por Terapeuta.</p>
               </div>
             </div>
 
