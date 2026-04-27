@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { BookingImportDialog } from "@/components/BookingImportDialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "spa_lleras_config";
 
