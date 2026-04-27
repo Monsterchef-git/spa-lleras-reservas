@@ -1,5 +1,5 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import { CalendarDays, Clock, Users, TrendingUp, CheckCircle, AlertCircle, XCircle, Timer, MessageCircle, DollarSign, Loader2 } from "lucide-react";
+import { CalendarDays, Clock, Users, TrendingUp, CheckCircle, AlertCircle, XCircle, MessageCircle, DollarSign, Loader2 } from "lucide-react";
 import { Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -377,26 +377,29 @@ export default function DashboardPage() {
         {/* 🟢 PRIORIDAD 1: Espacios Disponibles — widget principal de acción rápida */}
         <AvailabilityWidget />
 
-        {/* 🟢 PRIORIDAD 2: Próxima Cita + Próximas 24h */}
+        {/* 🟢 PRIORIDAD 2: Próxima Cita (compacta) + Próximas 24h */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <Card className="border-border/50 shadow-sm lg:col-span-1">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-3">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2 mb-2">
                 <Clock className="h-4 w-4 text-primary" />
                 <h3 className="font-medium text-sm">Próxima Cita</h3>
               </div>
               {m.nextBooking ? (
-                <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
-                  <p className="font-heading font-bold text-lg">{(m.nextBooking.start_time ?? "").slice(0, 5)}</p>
-                  <p className="font-medium text-sm">{m.nextBooking.clients?.name ?? "Sin cliente"}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {m.nextBooking.booking_items?.length
-                      ? m.nextBooking.booking_items.map((i) => i.services?.name).join(", ")
-                      : m.nextBooking.services?.name ?? "—"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {m.nextBooking.therapist?.name ?? "—"} · {m.nextBooking.resources?.name ?? "—"}
-                  </p>
+                <div className="bg-primary/5 border border-primary/20 rounded-lg p-2.5 flex items-center gap-3">
+                  <div className="font-heading font-bold text-xl text-primary leading-none">
+                    {(m.nextBooking.start_time ?? "").slice(0, 5)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm truncate">{m.nextBooking.clients?.name ?? "Sin cliente"}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {m.nextBooking.booking_items?.length
+                        ? m.nextBooking.booking_items.map((i) => i.services?.name).join(", ")
+                        : m.nextBooking.services?.name ?? "—"}
+                      {" · "}
+                      {m.nextBooking.therapist?.name ?? "—"}
+                    </p>
+                  </div>
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">No hay más citas programadas hoy</p>
@@ -443,9 +446,19 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-muted-foreground mb-3">
-              💡 Haz clic en un espacio vacío para crear una reserva, en un evento para editarlo, o arrástralo para moverlo.
-            </p>
+            <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+              <p className="text-xs text-muted-foreground">
+                💡 Clic en espacio vacío para crear, en un evento para editar, o arrástralo para moverlo.
+              </p>
+              <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                {Object.entries(statusColors).map(([status, color]) => (
+                  <div key={status} className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ backgroundColor: color }} />
+                    {statusLabels[status]}
+                  </div>
+                ))}
+              </div>
+            </div>
             <div className="spa-calendar">
               <DnDCalendar
                 localizer={localizer}
@@ -457,7 +470,7 @@ export default function DashboardPage() {
                 views={isMobile ? [Views.DAY, Views.AGENDA] : [Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
                 startAccessor="start"
                 endAccessor="end"
-                style={{ height: isMobile ? 480 : 600 }}
+                style={{ height: isMobile ? 380 : 460 }}
                 eventPropGetter={eventStyleGetter}
                 messages={calendarMessages}
                 min={new Date(0, 0, 0, 7, 0)}
@@ -475,143 +488,6 @@ export default function DashboardPage() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Today's Schedule */}
-        <Card className="border-border/50 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="font-heading text-lg flex items-center gap-2">
-              <Timer className="h-5 w-5 text-primary" />
-              Agenda del Día ({m.todayBookings.length} reservas)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {m.todayBookings.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">No hay reservas para hoy</p>
-            ) : (
-              <>
-              {/* Mobile: stacked cards */}
-              <div className="md:hidden divide-y divide-border">
-                {m.todayBookings
-                  .sort((a, b) => (a.start_time ?? "").localeCompare(b.start_time ?? ""))
-                  .map((b) => {
-                    const sc = statusConfig[b.status ?? "pendiente"];
-                    const serviceDisplay = b.booking_items?.length
-                      ? b.booking_items.map((i) => i.services?.name ?? "").join(", ")
-                      : b.services?.name ?? "—";
-                    return (
-                      <div key={b.id} className="py-3 flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <div className="font-medium text-sm">
-                            {(b.start_time ?? "").slice(0, 5)} – {(b.end_time ?? "").slice(0, 5)}
-                          </div>
-                          <div className="text-sm">{b.clients?.name ?? "—"}</div>
-                          <div className="text-xs text-muted-foreground truncate">{serviceDisplay}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {b.therapist?.name ?? "—"} · {b.resources?.name ?? "—"}
-                          </div>
-                          {b.price_cop != null && (
-                            <div className="text-xs font-medium mt-0.5">{formatCOP(b.price_cop)}</div>
-                          )}
-                        </div>
-                        <Badge variant="outline" className={sc?.className}>
-                          {statusLabels[b.status ?? "pendiente"]}
-                        </Badge>
-                      </div>
-                    );
-                  })}
-              </div>
-              {/* Desktop: table */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left py-2 px-3 font-medium text-muted-foreground">Hora</th>
-                      <th className="text-left py-2 px-3 font-medium text-muted-foreground">Cliente</th>
-                      <th className="text-left py-2 px-3 font-medium text-muted-foreground hidden md:table-cell">Servicio(s)</th>
-                      <th className="text-left py-2 px-3 font-medium text-muted-foreground hidden lg:table-cell">Terapeuta</th>
-                      <th className="text-left py-2 px-3 font-medium text-muted-foreground hidden lg:table-cell">Recurso</th>
-                      <th className="text-left py-2 px-3 font-medium text-muted-foreground hidden md:table-cell">Precio</th>
-                      <th className="text-left py-2 px-3 font-medium text-muted-foreground">Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {m.todayBookings
-                      .sort((a, b) => (a.start_time ?? "").localeCompare(b.start_time ?? ""))
-                      .map((b) => {
-                        const sc = statusConfig[b.status ?? "pendiente"];
-                        const serviceDisplay = b.booking_items?.length
-                          ? b.booking_items.map((i) => i.services?.name ?? "").join(", ")
-                          : b.services?.name ?? "—";
-                        return (
-                          <tr key={b.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                            <td className="py-3 px-3 font-medium">
-                              {(b.start_time ?? "").slice(0, 5)} - {(b.end_time ?? "").slice(0, 5)}
-                            </td>
-                            <td className="py-3 px-3">{b.clients?.name ?? "—"}</td>
-                            <td className="py-3 px-3 hidden md:table-cell text-muted-foreground max-w-[200px] truncate">{serviceDisplay}</td>
-                            <td className="py-3 px-3 hidden lg:table-cell text-muted-foreground">{b.therapist?.name ?? "—"}</td>
-                            <td className="py-3 px-3 hidden lg:table-cell text-muted-foreground">{b.resources?.name ?? "—"}</td>
-                            <td className="py-3 px-3 hidden md:table-cell">
-                              {b.price_cop != null && <span className="font-medium">{formatCOP(b.price_cop)}</span>}
-                            </td>
-                            <td className="py-3 px-3">
-                              <Badge variant="outline" className={sc?.className}>
-                                {statusLabels[b.status ?? "pendiente"]}
-                              </Badge>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                  </tbody>
-                </table>
-              </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Resource Occupancy */}
-        {resourceOccupancy.length > 0 && (
-          <>
-            <h2 className="font-heading text-lg font-bold">Ocupación por Recurso — Hoy</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {resourceOccupancy.map((r) => (
-                <Card key={r.id} className="border-border/50 shadow-sm">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-medium text-sm">{r.name}</h3>
-                      <Badge variant="outline" className={r.slots.length > 0 ? "status-badge-pending" : "status-badge-confirmed"}>
-                        {r.slots.length > 0 ? `${r.slots.length} cita(s)` : "Libre"}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground mb-2">{r.type}</p>
-                    {r.slots.length > 0 ? (
-                      <div className="space-y-1.5">
-                        {r.slots.map((s, i) => (
-                          <div key={i} className="text-xs px-2 py-1.5 rounded-md bg-primary/10 text-primary border border-primary/20">
-                            {s.start} - {s.end} · {s.client}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground italic">Sin reservas hoy</p>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </>
-        )}
-
-        {/* Calendar Legend */}
-        <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-          {Object.entries(statusColors).map(([status, color]) => (
-            <div key={status} className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-sm inline-block" style={{ backgroundColor: color }} />
-              {statusLabels[status]}
-            </div>
-          ))}
-        </div>
 
         {/* Interactive dialogs */}
         <BookingFormDialog
