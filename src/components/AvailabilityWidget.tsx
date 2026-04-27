@@ -285,13 +285,18 @@ export default function AvailabilityWidget() {
 
   return (
     <>
-      <Card className="border-border/50 shadow-sm">
+      <Card className="border-primary/30 shadow-md ring-1 ring-primary/10 bg-gradient-to-br from-card to-primary/5">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between gap-3 flex-wrap">
-            <CardTitle className="font-heading text-lg flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-accent" />
-              Espacios Disponibles
-            </CardTitle>
+            <div>
+              <CardTitle className="font-heading text-xl lg:text-2xl flex items-center gap-2">
+                <Sparkles className="h-6 w-6 text-accent" />
+                Espacios Disponibles
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-1 ml-8">
+                Toca un espacio para agendar al instante
+              </p>
+            </div>
             <div className="inline-flex rounded-md border border-border bg-muted/30 p-0.5">
               <button
                 type="button"

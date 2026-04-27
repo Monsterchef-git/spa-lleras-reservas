@@ -374,36 +374,12 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* WhatsApp pending + Next booking */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="border-border/50 shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <MessageCircle className="h-4 w-4 text-green-600" />
-                <h3 className="font-medium text-sm">Pendientes de WhatsApp</h3>
-                {m.whatsappPending.length > 0 && (
-                  <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">{m.whatsappPending.length}</Badge>
-                )}
-              </div>
-              {m.whatsappPending.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No hay reservas pendientes de WhatsApp 🎉</p>
-              ) : (
-                <div className="space-y-2">
-                  {m.whatsappPending.slice(0, 5).map((b) => (
-                    <div key={b.id} className="flex items-center justify-between text-sm bg-muted/30 px-3 py-2 rounded-md">
-                      <div>
-                        <span className="font-medium">{b.clients?.name ?? "—"}</span>
-                        <span className="text-muted-foreground ml-2">{b.booking_date} {(b.start_time ?? "").slice(0, 5)}</span>
-                      </div>
-                      <Badge variant="outline" className="status-badge-pending text-xs">Pendiente</Badge>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        {/* 🟢 PRIORIDAD 1: Espacios Disponibles — widget principal de acción rápida */}
+        <AvailabilityWidget />
 
-          <Card className="border-border/50 shadow-sm">
+        {/* 🟢 PRIORIDAD 2: Próxima Cita + Próximas 24h */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <Card className="border-border/50 shadow-sm lg:col-span-1">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Clock className="h-4 w-4 text-primary" />
@@ -427,13 +403,36 @@ export default function DashboardPage() {
               )}
             </CardContent>
           </Card>
+
+          <div className="lg:col-span-2">
+            <UpcomingBookingsWidget />
+          </div>
         </div>
 
-        {/* Upcoming 24h — quick-action widget */}
-        <UpcomingBookingsWidget />
-
-        {/* Availability + free time slots — quick scheduling widget */}
-        <AvailabilityWidget />
+        {/* 🟡 PRIORIDAD 3: WhatsApp pendientes — compacto */}
+        {m.whatsappPending.length > 0 && (
+          <Card className="border-border/50 shadow-sm">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <MessageCircle className="h-4 w-4 text-green-600" />
+                <h3 className="font-medium text-sm">Pendientes de WhatsApp</h3>
+                <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
+                  {m.whatsappPending.length}
+                </Badge>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {m.whatsappPending.slice(0, 6).map((b) => (
+                  <div key={b.id} className="flex items-center gap-2 text-xs bg-muted/40 px-2.5 py-1.5 rounded-md">
+                    <span className="font-medium">{b.clients?.name ?? "—"}</span>
+                    <span className="text-muted-foreground">
+                      {b.booking_date} · {(b.start_time ?? "").slice(0, 5)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Calendar */}
         <Card className="border-border/50 shadow-sm">
