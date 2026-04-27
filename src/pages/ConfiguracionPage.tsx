@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import {
-  Globe, MessageSquare, Mail, Upload, Calendar, Bell,
+  Globe, MessageSquare, Mail, Calendar, Bell,
   Save, RotateCcw, Settings2, Building2, Clock, Shield
 } from "lucide-react";
 
@@ -67,7 +67,6 @@ const DEFAULT_CONFIG: SpaConfig = {
     gcal: { connected: false, lastSync: "", config: { calendarId: "", apiKey: "" } },
     whatsapp: { connected: false, lastSync: "", config: { webhookUrl: "", phoneNumber: "", apiToken: "" } },
     email: { connected: false, lastSync: "", config: { smtpHost: "", smtpPort: "587", smtpUser: "", smtpPass: "" } },
-    csv: { connected: false, lastSync: "", config: {} },
     notifications: { connected: false, lastSync: "", config: { emailEnabled: "true", whatsappEnabled: "true" } },
   },
   lastModified: "",
@@ -104,12 +103,6 @@ const INTEGRATION_META = [
       { key: "smtpUser", label: "Usuario / Email", placeholder: "reservas@spalleras.com", hint: "Dirección de email para enviar correos", type: "email" },
       { key: "smtpPass", label: "Contraseña de aplicación", placeholder: "••••••••", hint: "Contraseña de app de Gmail o del servidor SMTP", type: "password" },
     ],
-  },
-  {
-    key: "csv", name: "Importar CSV/Excel", icon: Upload,
-    description: "Importar reservas antiguas desde archivos CSV o Excel.",
-    modalDescription: "Sube un archivo CSV o Excel para importar reservas históricas al sistema.",
-    fields: [],
   },
   {
     key: "notifications", name: "Notificaciones Automáticas", icon: Bell,
@@ -443,13 +436,6 @@ export default function ConfiguracionPage() {
                 )}
               </div>
             ))}
-            {meta?.fields.length === 0 && (
-              <div className="text-center py-6 text-muted-foreground">
-                <Upload className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">Arrastra un archivo CSV o Excel aquí, o haz clic para seleccionar</p>
-                <Button variant="outline" size="sm" className="mt-3">Seleccionar archivo</Button>
-              </div>
-            )}
           </div>
           <Separator />
           <DialogFooter>
