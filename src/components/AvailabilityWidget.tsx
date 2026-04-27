@@ -294,7 +294,7 @@ export default function AvailabilityWidget() {
                 Espacios Disponibles
               </CardTitle>
               <p className="text-xs text-muted-foreground mt-1 ml-8">
-                Toca un espacio para agendar al instante
+                Selecciona un espacio disponible para agendar
               </p>
             </div>
             <div className="inline-flex rounded-md border border-border bg-muted/30 p-0.5">
