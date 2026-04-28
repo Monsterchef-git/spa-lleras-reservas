@@ -93,8 +93,9 @@ export default function UsersAdminPage() {
                   <Select value={role} onValueChange={(v) => setRole(v as AppRole)}>
                     <SelectTrigger id="role"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="staff">Staff</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="staff">Staff (terapeutas / recepción)</SelectItem>
+                      <SelectItem value="administrativa">Administrativa (dueña / operación)</SelectItem>
+                      <SelectItem value="admin">Admin (acceso total)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
