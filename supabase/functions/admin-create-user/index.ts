@@ -12,7 +12,7 @@ interface CreateUserBody {
   email: string;
   password: string;
   name?: string;
-  role: "admin" | "staff";
+  role: "admin" | "administrativa" | "staff";
 }
 
 Deno.serve(async (req) => {
@@ -61,6 +61,12 @@ Deno.serve(async (req) => {
     const body = (await req.json()) as CreateUserBody;
     if (!body.email || !body.password || !body.role) {
       return new Response(JSON.stringify({ error: "Missing fields" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (!["admin", "administrativa", "staff"].includes(body.role)) {
+      return new Response(JSON.stringify({ error: "Invalid role" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

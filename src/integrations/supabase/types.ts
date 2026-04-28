@@ -408,7 +408,7 @@ export type Database = {
       set_cancel_reason: { Args: { reason: string }; Returns: undefined }
     }
     Enums: {
-      app_role: "admin" | "staff"
+      app_role: "admin" | "staff" | "administrativa"
       booking_source: "fresha" | "whatsapp" | "email" | "walk_in" | "web"
       booking_status: "pendiente" | "confirmada" | "cancelada" | "completada"
     }
@@ -538,7 +538,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "staff"],
+      app_role: ["admin", "staff", "administrativa"],
       booking_source: ["fresha", "whatsapp", "email", "walk_in", "web"],
       booking_status: ["pendiente", "confirmada", "cancelada", "completada"],
     },

@@ -19,19 +19,24 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { UserPlus } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
+import type { AppRole } from "@/hooks/useAuth";
 
-const baseNavItems = [
-  { to: "/", icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/reservas", icon: CalendarDays, label: "Reservas" },
-  { to: "/servicios", icon: Sparkles, label: "Servicios" },
-  { to: "/terapeutas", icon: Users, label: "Terapeutas" },
-  { to: "/clientes", icon: UserCircle, label: "Clientes" },
-  { to: "/reportes", icon: BarChart3, label: "Reportes" },
-  { to: "/configuracion", icon: Settings, label: "Configuración" },
-];
+type NavItem = {
+  to: string;
+  icon: typeof LayoutDashboard;
+  label: string;
+  roles: AppRole[]; // roles allowed to see this item
+};
 
-const adminNavItems = [
-  { to: "/usuarios", icon: UserPlus, label: "Usuarios" },
+const ALL_NAV_ITEMS: NavItem[] = [
+  { to: "/", icon: LayoutDashboard, label: "Dashboard", roles: ["admin", "administrativa", "staff"] },
+  { to: "/reservas", icon: CalendarDays, label: "Reservas", roles: ["admin", "administrativa", "staff"] },
+  { to: "/servicios", icon: Sparkles, label: "Servicios", roles: ["admin"] },
+  { to: "/terapeutas", icon: Users, label: "Terapeutas", roles: ["admin"] },
+  { to: "/clientes", icon: UserCircle, label: "Clientes", roles: ["admin", "administrativa", "staff"] },
+  { to: "/reportes", icon: BarChart3, label: "Reportes", roles: ["admin", "administrativa", "staff"] },
+  { to: "/configuracion", icon: Settings, label: "Configuración", roles: ["admin", "administrativa"] },
+  { to: "/usuarios", icon: UserPlus, label: "Usuarios", roles: ["admin"] },
 ];
 
 export function AppSidebar() {
@@ -39,7 +44,9 @@ export function AppSidebar() {
   const location = useLocation();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const navItems = user?.role === "admin" ? [...baseNavItems, ...adminNavItems] : baseNavItems;
+  const navItems = ALL_NAV_ITEMS.filter((item) =>
+    user?.role ? item.roles.includes(user.role) : false
+  );
 
   /* WhatsApp pending counter — kept in sync via the realtime subscription
      already wired inside useBookings(). */
@@ -125,7 +132,13 @@ export function AppSidebar() {
                     variant={user.role === "admin" ? "default" : "secondary"}
                     className="text-[10px] h-4 px-1.5"
                   >
-                    {user.role === "admin" ? "Admin" : user.role === "staff" ? "Staff" : "Sin rol"}
+                    {user.role === "admin"
+                      ? "Admin"
+                      : user.role === "administrativa"
+                      ? "Administrativa"
+                      : user.role === "staff"
+                      ? "Staff"
+                      : "Sin rol"}
                   </Badge>
                 </div>
               </div>

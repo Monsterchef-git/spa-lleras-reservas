@@ -1,15 +1,30 @@
 import { Navigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import { useAuth, type AppRole } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requireRole?: AppRole;
+  requireRole?: AppRole | AppRole[];
 }
 
 export function ProtectedRoute({ children, requireRole }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
   const location = useLocation();
+
+  const allowed = (() => {
+    if (!requireRole) return true;
+    if (!user?.role) return false;
+    const roles = Array.isArray(requireRole) ? requireRole : [requireRole];
+    return roles.includes(user.role);
+  })();
+
+  useEffect(() => {
+    if (!isLoading && user && !allowed) {
+      toast.error("No tienes permiso para acceder a esta sección");
+    }
+  }, [isLoading, user, allowed]);
 
   if (isLoading) {
     return (
@@ -23,7 +38,7 @@ export function ProtectedRoute({ children, requireRole }: ProtectedRouteProps) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (requireRole && user.role !== requireRole) {
+  if (!allowed) {
     return <Navigate to="/" replace />;
   }
 
