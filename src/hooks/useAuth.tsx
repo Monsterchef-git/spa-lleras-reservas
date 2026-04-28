@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from "
 import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
 
-export type AppRole = "admin" | "staff";
+export type AppRole = "admin" | "administrativa" | "staff";
 
 export interface AuthUser {
   id: string;
@@ -45,8 +45,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq("user_id", u.id)
       .order("role", { ascending: true });
     if (error || !data || data.length === 0) return null;
-    // admin wins over staff
+    // priority: admin > administrativa > staff
     if (data.some((r) => r.role === "admin")) return "admin";
+    if (data.some((r) => r.role === "administrativa")) return "administrativa";
     if (data.some((r) => r.role === "staff")) return "staff";
     return null;
   };

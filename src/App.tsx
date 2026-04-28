@@ -33,11 +33,11 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
             <Route path="/reservas" element={<ProtectedRoute><ReservasPage /></ProtectedRoute>} />
-            <Route path="/servicios" element={<ProtectedRoute><ServiciosPage /></ProtectedRoute>} />
-            <Route path="/terapeutas" element={<ProtectedRoute><TerapeutasPage /></ProtectedRoute>} />
+            <Route path="/servicios" element={<ProtectedRoute requireRole="admin"><ServiciosPage /></ProtectedRoute>} />
+            <Route path="/terapeutas" element={<ProtectedRoute requireRole="admin"><TerapeutasPage /></ProtectedRoute>} />
             <Route path="/clientes" element={<ProtectedRoute><ClientesPage /></ProtectedRoute>} />
             <Route path="/reportes" element={<ProtectedRoute><ReportesPage /></ProtectedRoute>} />
-            <Route path="/configuracion" element={<ProtectedRoute><ConfiguracionPage /></ProtectedRoute>} />
+            <Route path="/configuracion" element={<ProtectedRoute requireRole={["admin", "administrativa"]}><ConfiguracionPage /></ProtectedRoute>} />
             <Route path="/usuarios" element={<ProtectedRoute requireRole="admin"><UsersAdminPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
