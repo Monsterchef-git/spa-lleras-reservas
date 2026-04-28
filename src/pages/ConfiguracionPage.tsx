@@ -18,6 +18,7 @@ import {
 import { BookingImportDialog } from "@/components/BookingImportDialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
 const STORAGE_KEY = "spa_lleras_config";
 
@@ -131,6 +132,8 @@ export default function ConfiguracionPage() {
   const [integrationModal, setIntegrationModal] = useState<string | null>(null);
   const [modalFields, setModalFields] = useState<Record<string, string>>({});
   const [importOpen, setImportOpen] = useState(false);
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
 
   const update = <K extends keyof SpaConfig>(key: K, value: SpaConfig[K]) => {
     setConfig((prev) => ({ ...prev, [key]: value }));
@@ -351,6 +354,7 @@ export default function ConfiguracionPage() {
         </Card>
 
         {/* Integrations */}
+        {isAdmin && (
         <Card className="border-border/50 shadow-sm">
           <CardHeader className="pb-4">
             <CardTitle className="font-heading text-lg flex items-center gap-2">
@@ -423,6 +427,7 @@ export default function ConfiguracionPage() {
             </TooltipProvider>
           </CardContent>
         </Card>
+        )}
 
         {/* Bottom Save */}
         <div className="flex justify-end gap-2 pb-8">
