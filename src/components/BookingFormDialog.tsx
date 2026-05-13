@@ -83,6 +83,8 @@ export default function BookingFormDialog({
    *  whether they want to promote it to a real client. */
   const [walkInPrompt, setWalkInPrompt] = useState<{ clientId: string } | null>(null);
   const [walkInRealName, setWalkInRealName] = useState("");
+  const [walkInPhone, setWalkInPhone] = useState("");
+  const [walkInEmail, setWalkInEmail] = useState("");
 
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(BookingSchema),
@@ -241,10 +243,17 @@ export default function BookingFormDialog({
     try {
       await updateClient.mutateAsync({
         id: walkInPrompt.clientId,
-        data: { name, notes: null },
+        data: {
+          name,
+          phone: walkInPhone.trim() || null,
+          email: walkInEmail.trim() || null,
+          notes: null,
+        },
       });
       toast({ title: "Cliente registrado", description: `${name} ya quedó en tu base de clientes.` });
       setWalkInPrompt(null);
+      setWalkInPhone("");
+      setWalkInEmail("");
     } catch (err: any) {
       toast({ title: "Error", description: err?.message ?? "Intenta de nuevo.", variant: "destructive" });
     }
@@ -359,20 +368,36 @@ export default function BookingFormDialog({
           <AlertDialogHeader>
             <AlertDialogTitle>¿Guardar el walk-in como cliente real?</AlertDialogTitle>
             <AlertDialogDescription>
-              Escribe el nombre real del cliente para conservarlo en tu base. Si no, quedará como
+              Completa los datos para conservarlo en tu base de clientes. Si no, quedará como
               "Walk-in" temporal y podrás editarlo después.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <input
-            type="text"
-            autoFocus
-            placeholder="Nombre real del cliente"
-            value={walkInRealName}
-            onChange={(e) => setWalkInRealName(e.target.value)}
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          />
+          <div className="space-y-2">
+            <input
+              type="text"
+              autoFocus
+              placeholder="Nombre completo *"
+              value={walkInRealName}
+              onChange={(e) => setWalkInRealName(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+            <input
+              type="tel"
+              placeholder="WhatsApp / Teléfono (opcional)"
+              value={walkInPhone}
+              onChange={(e) => setWalkInPhone(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+            <input
+              type="email"
+              placeholder="Email (opcional)"
+              value={walkInEmail}
+              onChange={(e) => setWalkInEmail(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </div>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setWalkInPrompt(null)}>
+            <AlertDialogCancel onClick={() => { setWalkInPrompt(null); setWalkInPhone(""); setWalkInEmail(""); }}>
               No, dejar como walk-in
             </AlertDialogCancel>
             <AlertDialogAction onClick={promoteWalkIn}>
