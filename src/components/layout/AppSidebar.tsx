@@ -11,6 +11,7 @@ import {
   Menu,
   X,
   Shield,
+  CalendarClock,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,7 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { to: "/reservas", icon: CalendarDays, label: "Reservas", roles: ["admin", "administrativa", "staff"] },
   { to: "/servicios", icon: Sparkles, label: "Servicios", roles: ["admin"] },
   { to: "/terapeutas", icon: Users, label: "Terapeutas", roles: ["admin"] },
+  { to: "/horarios", icon: CalendarClock, label: "Horarios", roles: ["admin", "administrativa"] },
   { to: "/clientes", icon: UserCircle, label: "Clientes", roles: ["admin", "administrativa", "staff"] },
   { to: "/reportes", icon: BarChart3, label: "Reportes", roles: ["admin", "administrativa", "staff"] },
   { to: "/configuracion", icon: Settings, label: "Configuración", roles: ["admin", "administrativa"] },
