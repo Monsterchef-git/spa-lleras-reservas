@@ -30,6 +30,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import ClientCombobox from "@/components/ClientCombobox";
 import ClientHistorySummary from "@/components/ClientHistorySummary";
 import CountryCombobox from "@/components/CountryCombobox";
+import { useTherapistSchedules, useScheduleExceptions } from "@/hooks/useTherapistSchedules";
+import { resolveScheduleForDate } from "@/lib/scheduleUtils";
 
 function formatCOP(n: number) {
   return new Intl.NumberFormat("es-CO", {
@@ -92,6 +94,20 @@ export default function BookingFormFields({
   const items = useWatch({ control, name: "items" });
   const startTime = useWatch({ control, name: "startTime" });
   const therapistId = useWatch({ control, name: "therapistId" });
+  const dateWatched = useWatch({ control, name: "date" });
+  const secondTherapistId = useWatch({ control, name: "secondTherapistId" });
+
+  const { data: allSchedules } = useTherapistSchedules();
+  const { data: allExceptions } = useScheduleExceptions();
+
+  const scheduleInfo = useMemo(() => {
+    if (!therapistId || !dateWatched) return null;
+    return resolveScheduleForDate(allSchedules, allExceptions, therapistId, dateWatched);
+  }, [therapistId, dateWatched, allSchedules, allExceptions]);
+  const secondScheduleInfo = useMemo(() => {
+    if (!secondTherapistId || !dateWatched) return null;
+    return resolveScheduleForDate(allSchedules, allExceptions, secondTherapistId, dateWatched);
+  }, [secondTherapistId, dateWatched, allSchedules, allExceptions]);
 
   const { fields, append, remove } = useFieldArray({ control, name: "items" });
 
@@ -576,6 +592,35 @@ export default function BookingFormFields({
           <Clock className="h-3.5 w-3.5" />
           Bloque de <span className="font-semibold">{formatDuration(totalMinutes)}</span> — termina a las{" "}
           {calculateEndTime(startTime, totalMinutes) || "—"}
+        </div>
+      )}
+
+      {scheduleInfo?.hasConfig && (
+        <div className={cn(
+          "text-xs px-3 py-2 rounded-md flex items-start gap-1.5 border",
+          scheduleInfo.isWorking
+            ? "bg-primary/5 border-primary/20 text-foreground"
+            : "bg-destructive/5 border-destructive/30 text-destructive",
+        )}>
+          <CalendarClock className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          {scheduleInfo.isWorking ? (
+            <span>
+              Horario de la terapeuta este día:{" "}
+              <span className="font-semibold">
+                {scheduleInfo.startTime?.slice(0, 5)} – {scheduleInfo.endTime?.slice(0, 5)}
+              </span>
+              {scheduleInfo.source === "exception" && " (excepción)"}
+            </span>
+          ) : (
+            <span className="font-medium">Esta terapeuta tiene día libre en la fecha seleccionada.</span>
+          )}
+        </div>
+      )}
+
+      {secondScheduleInfo?.hasConfig && !secondScheduleInfo.isWorking && (
+        <div className="text-xs px-3 py-2 rounded-md flex items-start gap-1.5 border bg-destructive/5 border-destructive/30 text-destructive">
+          <CalendarClock className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          <span className="font-medium">La segunda terapeuta tiene día libre en la fecha seleccionada.</span>
         </div>
       )}
 

@@ -16,6 +16,7 @@ import LoginPage from "./pages/LoginPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import UsersAdminPage from "./pages/UsersAdminPage";
+import HorariosPage from "./pages/HorariosPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/clientes" element={<ProtectedRoute><ClientesPage /></ProtectedRoute>} />
             <Route path="/reportes" element={<ProtectedRoute><ReportesPage /></ProtectedRoute>} />
             <Route path="/configuracion" element={<ProtectedRoute requireRole={["admin", "administrativa"]}><ConfiguracionPage /></ProtectedRoute>} />
+            <Route path="/horarios" element={<ProtectedRoute requireRole={["admin", "administrativa"]}><HorariosPage /></ProtectedRoute>} />
             <Route path="/usuarios" element={<ProtectedRoute requireRole="admin"><UsersAdminPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

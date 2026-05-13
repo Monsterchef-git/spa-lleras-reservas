@@ -345,6 +345,75 @@ export type Database = {
         }
         Relationships: []
       }
+      therapist_schedule_exceptions: {
+        Row: {
+          created_at: string
+          end_time: string | null
+          exception_date: string
+          id: string
+          is_day_off: boolean
+          notes: string | null
+          start_time: string | null
+          therapist_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_time?: string | null
+          exception_date: string
+          id?: string
+          is_day_off?: boolean
+          notes?: string | null
+          start_time?: string | null
+          therapist_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: string | null
+          exception_date?: string
+          id?: string
+          is_day_off?: boolean
+          notes?: string | null
+          start_time?: string | null
+          therapist_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      therapist_schedules: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          end_time: string | null
+          id: string
+          is_day_off: boolean
+          start_time: string | null
+          therapist_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          end_time?: string | null
+          id?: string
+          is_day_off?: boolean
+          start_time?: string | null
+          therapist_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          end_time?: string | null
+          id?: string
+          is_day_off?: boolean
+          start_time?: string | null
+          therapist_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       therapists: {
         Row: {
           created_at: string | null
@@ -398,6 +467,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_therapist_schedule: {
+        Args: { _date: string; _therapist_id: string }
+        Returns: {
+          end_time: string
+          has_config: boolean
+          is_working: boolean
+          start_time: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

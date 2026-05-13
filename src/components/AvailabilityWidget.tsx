@@ -17,6 +17,8 @@ import { useBookings, type Booking } from "@/hooks/useBookings";
 import { useTherapists, type Therapist } from "@/hooks/useTherapists";
 import { useResources, type Resource } from "@/hooks/useResources";
 import BookingFormDialog from "@/components/BookingFormDialog";
+import { useTherapistSchedules, useScheduleExceptions } from "@/hooks/useTherapistSchedules";
+import { resolveScheduleForDate } from "@/lib/scheduleUtils";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Helpers (pure, time-string based — keeps it cheap and avoids tz bugs)
@@ -112,6 +114,8 @@ export default function AvailabilityWidget() {
   const { data: bookings } = useBookings();
   const { data: therapists } = useTherapists();
   const { data: resources } = useResources();
+  const { data: allSchedules } = useTherapistSchedules();
+  const { data: allExceptions } = useScheduleExceptions();
 
   const [filter, setFilter] = useState<Filter>("next4");
 
@@ -132,6 +136,21 @@ export default function AvailabilityWidget() {
 
   const date = todayStr();
   const now = nowMinutes();
+
+  /* Per-therapist resolved schedule for TODAY. */
+  const therapistSchedule = useMemo(() => {
+    const map = new Map<string, { isWorking: boolean; startMin: number; endMin: number; hasConfig: boolean }>();
+    for (const t of therapists ?? []) {
+      const r = resolveScheduleForDate(allSchedules, allExceptions, t.id, date);
+      map.set(t.id, {
+        isWorking: r.isWorking,
+        startMin: r.startTime ? toMin(r.startTime) : DAY_OPEN,
+        endMin: r.endTime ? toMin(r.endTime) : DAY_CLOSE,
+        hasConfig: r.hasConfig,
+      });
+    }
+    return map;
+  }, [therapists, allSchedules, allExceptions, date]);
 
   /* Today's active bookings only (pendiente / confirmada). */
   const activeToday: Booking[] = useMemo(() => {
@@ -189,14 +208,16 @@ export default function AvailabilityWidget() {
           nextFree = now;
           (void upcoming);
         }
+        const sched = therapistSchedule.get(t.id);
         return {
           therapist: t,
           isBusy: !!current,
           freeAt: current ? current.end : now,
           nextBusyStart: busy.find((b) => b.start > now)?.start ?? DAY_CLOSE,
+          schedule: sched,
         };
       });
-  }, [therapists, therapistBusy, now]);
+  }, [therapists, therapistBusy, now, therapistSchedule]);
 
   /* ── Section 2: Resource status ────────────────────────────────── */
   const resourceStatus = useMemo(() => {
@@ -231,7 +252,13 @@ export default function AvailabilityWidget() {
     /* For every therapist × resource, compute intersection of free gaps. */
     const found: SlotSuggestion[] = [];
     for (const t of activeTherapists) {
-      const tGaps = freeGaps(horizonStart, horizonEnd, therapistBusy.get(t.id) ?? []);
+      const sched = therapistSchedule.get(t.id);
+      // Skip therapists who are off today
+      if (sched && sched.hasConfig && !sched.isWorking) continue;
+      const tStart = Math.max(horizonStart, sched?.startMin ?? DAY_OPEN);
+      const tEnd = Math.min(horizonEnd, sched?.endMin ?? DAY_CLOSE);
+      if (tStart >= tEnd) continue;
+      const tGaps = freeGaps(tStart, tEnd, therapistBusy.get(t.id) ?? []);
       for (const r of activeResources) {
         const rGaps = freeGaps(horizonStart, horizonEnd, resourceBusy.get(r.id) ?? []);
         // intersect tGaps with rGaps
@@ -271,7 +298,7 @@ export default function AvailabilityWidget() {
       });
 
     return unique.slice(0, 8);
-  }, [therapists, resources, therapistBusy, resourceBusy, filter, now]);
+  }, [therapists, resources, therapistBusy, resourceBusy, filter, now, therapistSchedule]);
 
   const handleSlotClick = (s: SlotSuggestion) => {
     setPre({
@@ -337,12 +364,16 @@ export default function AvailabilityWidget() {
               <p className="text-sm text-muted-foreground italic">No hay terapeutas activos.</p>
             ) : (
               <div className="flex gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:overflow-visible">
-                {therapistStatus.map(({ therapist: t, isBusy, freeAt }) => (
+                {therapistStatus.map(({ therapist: t, isBusy, freeAt, schedule }) => {
+                  const isOff = schedule?.hasConfig && !schedule.isWorking;
+                  return (
                   <div
                     key={t.id}
                     className={cn(
                       "shrink-0 w-[200px] sm:w-auto flex items-center gap-2.5 rounded-lg border p-2.5 transition-colors",
-                      isBusy
+                      isOff
+                        ? "border-muted bg-muted/40 opacity-70"
+                        : isBusy
                         ? "border-amber-300/60 bg-amber-50/60"
                         : "border-primary/20 bg-primary/5",
                     )}
@@ -351,7 +382,9 @@ export default function AvailabilityWidget() {
                       <AvatarFallback
                         className={cn(
                           "text-xs font-semibold",
-                          isBusy
+                          isOff
+                            ? "bg-muted text-muted-foreground"
+                            : isBusy
                             ? "bg-amber-100 text-amber-800"
                             : "bg-primary/15 text-primary",
                         )}
@@ -361,26 +394,40 @@ export default function AvailabilityWidget() {
                     </Avatar>
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-medium truncate">{t.name}</div>
-                      <div className="flex items-center gap-1 text-xs">
-                        <CircleDot
-                          className={cn(
-                            "h-2.5 w-2.5",
-                            isBusy ? "text-amber-600" : "text-emerald-600",
+                      {isOff ? (
+                        <div className="flex items-center gap-1 text-xs">
+                          <span className="font-medium text-muted-foreground">Día libre</span>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-1 text-xs">
+                            <CircleDot
+                              className={cn(
+                                "h-2.5 w-2.5",
+                                isBusy ? "text-amber-600" : "text-emerald-600",
+                              )}
+                              fill="currentColor"
+                            />
+                            <span
+                              className={cn(
+                                "font-medium",
+                                isBusy ? "text-amber-800" : "text-emerald-700",
+                              )}
+                            >
+                              {isBusy ? `Ocupado · libre ${fromMin(freeAt)}` : "Disponible ahora"}
+                            </span>
+                          </div>
+                          {schedule?.hasConfig && (
+                            <div className="text-[10px] text-muted-foreground mt-0.5">
+                              Hoy: {fromMin(schedule.startMin)} – {fromMin(schedule.endMin)}
+                            </div>
                           )}
-                          fill="currentColor"
-                        />
-                        <span
-                          className={cn(
-                            "font-medium",
-                            isBusy ? "text-amber-800" : "text-emerald-700",
-                          )}
-                        >
-                          {isBusy ? `Ocupado · libre ${fromMin(freeAt)}` : "Disponible ahora"}
-                        </span>
-                      </div>
+                        </>
+                      )}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>
