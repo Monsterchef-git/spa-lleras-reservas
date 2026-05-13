@@ -14,6 +14,7 @@ Sistema interno de gestión de reservas para **Spa Lleras**, ubicado en Parque L
 4. [Roles y Permisos](#4-roles-y-permisos)
 5. [Integraciones](#5-integraciones-actuales)
 6. [Próximos Pasos](#6-próximos-pasos-recomendados)
+7. [Horarios de Terapeutas](#7-horarios-de-terapeutas)
 
 ---
 
@@ -27,6 +28,7 @@ Spa Lleras Reservations es una aplicación interna que centraliza la operación 
 - 💆 **Catálogo de servicios** (masajes, faciales, manicure, combos) con precios en COP y USD
 - 👥 **Gestión de clientes** con historial completo
 - 🧖 **Administración de terapeutas y recursos** (salas, rooftop)
+- 🕐 **Horarios laborales por terapeuta** (jornada semanal + excepciones por fecha)
 - 💰 **Reportes de ventas y propinas** por terapeuta y por servicio
 - 📝 **Auditoría completa** de todas las acciones (quién creó/canceló/modificó cada reserva)
 
@@ -55,6 +57,17 @@ Spa Lleras Reservations es una aplicación interna que centraliza la operación 
 9. Guardar — el sistema valida automáticamente que **no haya doble reserva** del terapeuta o la sala.
 
 > ⚠️ Si hay conflicto, aparece un mensaje claro: *"El terapeuta X ya tiene una reserva de 14:00 a 15:00 ese día"*.
+> ⏰ También se valida que la hora esté **dentro del horario laboral** de la terapeuta (jornada base o excepción del día).
+
+### 🕐 Horarios de Terapeutas
+
+1. Ir a **Horarios** en el menú lateral (solo Admin / Administrativa).
+2. Cada terapeuta tiene su tarjeta con resumen de la jornada semanal.
+3. Click en **Editar** para abrir el diálogo con dos pestañas:
+   - **Jornada base**: horarios por día de la semana (Lunes–Domingo) con hora de entrada/salida o marcar como día libre.
+   - **Excepciones**: ajustes puntuales por fecha (vacaciones, citas médicas, festivos, jornada especial) con notas.
+4. Las excepciones **tienen prioridad** sobre la jornada base para esa fecha.
+5. El widget **Espacios Disponibles** y el formulario de reserva respetan automáticamente estos horarios.
 
 ### 🪟 Widget "Espacios Disponibles"
 
@@ -150,6 +163,8 @@ Todos los formularios críticos usan `react-hook-form` + esquemas **Zod** defini
 | `therapists` | Terapeutas con especialidades y disponibilidad |
 | `resources` | Salas y rooftop |
 | `user_roles` | Roles (admin / administrativa / staff) — separados de auth.users |
+| `therapist_schedules` | Jornada base semanal por terapeuta (día, hora inicio, hora fin) |
+| `therapist_schedule_exceptions` | Excepciones por fecha (días libres, jornada especial) |
 
 **Triggers importantes:**
 
@@ -159,6 +174,7 @@ Todos los formularios críticos usan `react-hook-form` + esquemas **Zod** defini
   - Horario laboral 10:00–22:00
   - Terapeuta principal ≠ segundo terapeuta
   - Sin solapamiento con otra reserva activa del mismo terapeuta o sala
+- 🕐 **`validate_booking_within_schedule`** — valida que la reserva esté dentro del horario laboral del terapeuta principal y secundario, resolviendo excepciones primero y luego jornada base (helper `get_therapist_schedule`).
 - 📜 **`audit_booking_changes`** + **`audit_booking_items_changes`** — registran todos los cambios en `booking_audit_log` con `user_id` y razón opcional.
 - ⏱️ **`update_updated_at_column`** — mantiene `updated_at` al día.
 
@@ -196,6 +212,7 @@ Todos los formularios críticos usan `react-hook-form` + esquemas **Zod** defini
 | Servicios | ✅ | ❌ | ❌ |
 | Terapeutas | ✅ | ❌ | ❌ |
 | Recursos / Espacios | ✅ | ✅ | ❌ |
+| Horarios de Terapeutas | ✅ | ✅ | 👁️ Solo lectura (en widget) |
 | Usuarios | ✅ | ❌ | ❌ |
 
 > 🔒 La protección es consistente en **3 capas**: Sidebar (oculta items), `ProtectedRoute` (bloquea ruta y redirige al Dashboard con toast), y RLS en backend.
@@ -213,6 +230,7 @@ Todos los formularios críticos usan `react-hook-form` + esquemas **Zod** defini
 - **Reportes de ventas y propinas** con export Excel/PDF
 - **Importación de reservas desde Excel**
 - **Audit log** completo
+- **Horarios laborales** por terapeuta con excepciones por fecha y validación server-side
 - **Email transaccional** de confirmación (vía edge function)
 - **Recordatorios 24h** automáticos (cron diario)
 
@@ -233,6 +251,30 @@ Todos los formularios críticos usan `react-hook-form` + esquemas **Zod** defini
 4. 💳 **Pagos en línea** — link de pago al confirmar la reserva (Wompi / Mercado Pago para COP).
 5. 📊 **Dashboard ejecutivo** — gráficos de ocupación, ticket promedio, fidelización.
 6. 🌐 **Reservas públicas online** — formulario embebible en spalleras.com.
+
+---
+
+## 7. Horarios de Terapeutas
+
+Sistema dedicado para que Cata gestione la jornada laboral del equipo sin tocar configuración técnica.
+
+**Modelo de datos:**
+- `therapist_schedules`: una fila por (terapeuta, día de la semana 0–6) con `start_time`, `end_time` e `is_working`.
+- `therapist_schedule_exceptions`: una fila por (terapeuta, fecha) para sobrescribir un día puntual (libre, vacaciones, jornada especial) con campo `notes`.
+
+**Resolución de horario para una fecha:**
+1. Si existe excepción para esa fecha → se usa la excepción.
+2. Si no, se usa la jornada base del día de la semana correspondiente.
+3. Si no hay configuración → no se restringe (compatibilidad con datos previos).
+
+**Integración con reservas:**
+- Trigger `trg_validate_booking_schedule` en `bookings` bloquea inserciones/updates fuera de jornada (terapeuta principal y secundario).
+- `AvailabilityWidget` excluye terapeutas en día libre y limita los slots a su rango laboral.
+- `BookingFormFields` muestra banner con el horario del terapeuta y advertencia en tiempo real si la hora seleccionada cae fuera.
+
+**Permisos:**
+- ✅ Admin y Administrativa: ver y editar.
+- 👁️ Staff: solo ve el efecto en el widget de disponibilidad.
 
 ---
 
