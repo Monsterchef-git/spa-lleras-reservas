@@ -117,6 +117,10 @@ Deno.serve(async (req) => {
         const startTime = formatTimeInTZ(startDt);
         const endTime = formatTimeInTZ(endDt);
 
+        // Skip past events — bookings table rejects past dates by design
+        const todayBogota = formatDateInTZ(new Date());
+        if (bookingDate < todayBogota) continue;
+
         const summary: string = (ev.summary ?? "").toString();
         const description: string = (ev.description ?? "").toString();
         const haystack = `${summary}\n${description}`.toLowerCase();
@@ -206,7 +210,13 @@ Deno.serve(async (req) => {
           created++;
         }
       } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
+        const msg =
+          e instanceof Error
+            ? e.message
+            : typeof e === "object" && e !== null
+            ? JSON.stringify(e)
+            : String(e);
+        console.error(`[sync] event ${ev.id} failed:`, e);
         errors.push(`Evento ${ev.id}: ${msg}`);
       }
     }
