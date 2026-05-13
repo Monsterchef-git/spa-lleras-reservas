@@ -14,6 +14,8 @@ import {
 import { DAY_NAMES_SHORT } from "@/lib/scheduleUtils";
 import TherapistScheduleDialog from "@/components/TherapistScheduleDialog";
 import { useAuth } from "@/hooks/useAuth";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ScheduleCalendar from "@/components/ScheduleCalendar";
 
 const DISPLAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
@@ -35,26 +37,39 @@ export default function HorariosPage() {
             Horarios de Terapeutas
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Define el horario semanal y las excepciones puntuales de cada terapeuta.
+            Programa horarios quincenales por terapeuta. Haz clic en un día para editarlo.
           </p>
         </div>
 
         {isLoading ? (
           <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
         ) : (
-          <div className="grid gap-3 md:grid-cols-2">
-            {(therapists ?? []).map((t) => (
-              <TherapistScheduleCard
-                key={t.id}
-                therapistId={t.id}
-                therapistName={t.name}
-                schedules={(allSchedules ?? []).filter((s) => s.therapist_id === t.id)}
-                exceptions={(allExceptions ?? []).filter((e) => e.therapist_id === t.id)}
-                canEdit={canEdit}
-                onEdit={() => setEditing({ id: t.id, name: t.name })}
-              />
-            ))}
-          </div>
+          <Tabs defaultValue="calendar" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 max-w-md">
+              <TabsTrigger value="calendar">Calendario</TabsTrigger>
+              <TabsTrigger value="base">Horario base</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="calendar" className="pt-4">
+              <ScheduleCalendar canEdit={canEdit} />
+            </TabsContent>
+
+            <TabsContent value="base" className="pt-4">
+              <div className="grid gap-3 md:grid-cols-2">
+                {(therapists ?? []).map((t) => (
+                  <TherapistScheduleCard
+                    key={t.id}
+                    therapistId={t.id}
+                    therapistName={t.name}
+                    schedules={(allSchedules ?? []).filter((s) => s.therapist_id === t.id)}
+                    exceptions={(allExceptions ?? []).filter((e) => e.therapist_id === t.id)}
+                    canEdit={canEdit}
+                    onEdit={() => setEditing({ id: t.id, name: t.name })}
+                  />
+                ))}
+              </div>
+            </TabsContent>
+          </Tabs>
         )}
       </div>
 
