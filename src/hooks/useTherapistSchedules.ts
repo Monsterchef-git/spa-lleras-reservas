@@ -70,3 +70,33 @@ export function useDeleteException() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["therapist_schedule_exceptions"] }),
   });
 }
+
+export function useBulkUpsertExceptions() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (rows: TablesInsert<"therapist_schedule_exceptions">[]) => {
+      if (rows.length === 0) return;
+      const { error } = await supabase
+        .from("therapist_schedule_exceptions")
+        .upsert(rows, { onConflict: "therapist_id,exception_date" });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["therapist_schedule_exceptions"] }),
+  });
+}
+
+export function useDeleteExceptionsInRange() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { therapistId: string; from: string; to: string }) => {
+      const { error } = await supabase
+        .from("therapist_schedule_exceptions")
+        .delete()
+        .eq("therapist_id", input.therapistId)
+        .gte("exception_date", input.from)
+        .lte("exception_date", input.to);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["therapist_schedule_exceptions"] }),
+  });
+}
