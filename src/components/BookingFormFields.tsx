@@ -32,6 +32,7 @@ import ClientHistorySummary from "@/components/ClientHistorySummary";
 import CountryCombobox from "@/components/CountryCombobox";
 import { useTherapistSchedules, useScheduleExceptions } from "@/hooks/useTherapistSchedules";
 import { resolveScheduleForDate } from "@/lib/scheduleUtils";
+import { useBookings } from "@/hooks/useBookings";
 
 function formatCOP(n: number) {
   return new Intl.NumberFormat("es-CO", {
@@ -99,6 +100,31 @@ export default function BookingFormFields({
 
   const { data: allSchedules } = useTherapistSchedules();
   const { data: allExceptions } = useScheduleExceptions();
+  const { data: allBookings } = useBookings();
+
+  /* Compute who/what is busy in the chosen time-slot (for the date) so we
+   * can decorate select options with "Ocupado HH:MM-HH:MM" + disable them. */
+  const busyMap = useMemo(() => {
+    const therapists = new Map<string, string>();
+    const resources = new Map<string, string>();
+    if (!dateWatched || !startTime || !totalMinutesDraftRef.current) {
+      return { therapists, resources };
+    }
+    const endTime = calculateEndTime(startTime, totalMinutesDraftRef.current);
+    if (!endTime) return { therapists, resources };
+    for (const b of allBookings ?? []) {
+      if (b.booking_date !== dateWatched) continue;
+      if (b.status !== "pendiente" && b.status !== "confirmada") continue;
+      const overlap = b.start_time < endTime && b.end_time > startTime;
+      if (!overlap) continue;
+      const label = `Ocupado ${b.start_time.slice(0, 5)}–${b.end_time.slice(0, 5)}`;
+      if (b.therapist_id) therapists.set(b.therapist_id, label);
+      if (b.second_therapist_id) therapists.set(b.second_therapist_id, label);
+      if (b.resource_id) resources.set(b.resource_id, label);
+    }
+    return { therapists, resources };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allBookings, dateWatched, startTime, items]);
 
   const scheduleInfo = useMemo(() => {
     if (!therapistId || !dateWatched) return null;
@@ -136,6 +162,9 @@ export default function BookingFormFields({
     return { totalMinutes: mins, totalCOP: cop, totalUSD: usd, requiresTwoTherapists: needsTwo };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, activeServices]);
+
+  // Keep the latest totalMinutes accessible to busyMap memo (avoids a circular dep).
+  totalMinutesDraftRef.current = totalMinutes;
 
   useEffect(() => {
     setValue("totalMinutes", totalMinutes, { shouldValidate: false });
