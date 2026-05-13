@@ -206,7 +206,13 @@ Deno.serve(async (req) => {
           created++;
         }
       } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
+        const msg =
+          e instanceof Error
+            ? e.message
+            : typeof e === "object" && e !== null
+            ? JSON.stringify(e)
+            : String(e);
+        console.error(`[sync] event ${ev.id} failed:`, e);
         errors.push(`Evento ${ev.id}: ${msg}`);
       }
     }
