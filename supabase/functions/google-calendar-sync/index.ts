@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
       admin.from("clients").select("id, name"),
     ]);
 
-    let created = 0, updated = 0, cancelled = 0, conflicts = 0;
+    let created = 0, updated = 0, cancelled = 0, conflicts = 0, skippedPast = 0, skippedWithoutTime = 0;
     const errors: string[] = [];
 
     for (const ev of events) {
@@ -109,7 +109,11 @@ Deno.serve(async (req) => {
         }
 
         // Skip all-day or events without dateTime
-        if (!ev.start?.dateTime || !ev.end?.dateTime) continue;
+        if (!ev.start?.dateTime || !ev.end?.dateTime) {
+          skippedWithoutTime++;
+          console.log(`[sync] event skipped without dateTime: id=${eventId} status=${ev.status ?? "unknown"}`);
+          continue;
+        }
 
         const startDt = new Date(ev.start.dateTime);
         const endDt = new Date(ev.end.dateTime);
@@ -119,7 +123,11 @@ Deno.serve(async (req) => {
 
         // Skip past events — bookings table rejects past dates by design
         const todayBogota = formatDateInTZ(new Date());
-        if (bookingDate < todayBogota) continue;
+        if (bookingDate < todayBogota) {
+          skippedPast++;
+          console.log(`[sync] event skipped past date: id=${eventId} bookingDate=${bookingDate} today=${todayBogota}`);
+          continue;
+        }
 
         const summary: string = (ev.summary ?? "").toString();
         const description: string = (ev.description ?? "").toString();
@@ -224,7 +232,7 @@ Deno.serve(async (req) => {
     const total = created + updated + cancelled;
     const status = errors.length === 0 ? "ok" : (total > 0 ? "ok" : "error");
     const message = errors.length === 0
-      ? `OK — ${created} creadas, ${updated} actualizadas, ${cancelled} canceladas, ${conflicts} con conflicto`
+      ? `OK — ${created} creadas, ${updated} actualizadas, ${cancelled} canceladas, ${conflicts} con conflicto, ${skippedPast + skippedWithoutTime} omitidas`
       : `Parcial — ${errors.length} errores. Primer error: ${errors[0]}`;
 
     await admin.from("google_calendar_sync_config").update({
@@ -234,7 +242,7 @@ Deno.serve(async (req) => {
       last_sync_count: total,
     }).eq("id", cfgRow.id);
 
-    return json({ ok: true, created, updated, cancelled, conflicts, errors });
+    return json({ ok: true, fetched: events.length, created, updated, cancelled, conflicts, skippedPast, skippedWithoutTime, errors });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     try {
