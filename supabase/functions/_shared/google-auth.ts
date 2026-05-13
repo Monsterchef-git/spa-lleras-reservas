@@ -36,14 +36,41 @@ export function loadServiceAccount(): ServiceAccount {
   const raw = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
   if (!raw) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON no está configurado");
   let parsed: any;
-  try {
-    parsed = JSON.parse(raw);
-  } catch (_e) {
-    throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON no es un JSON válido");
+  const tryParse = (s: string) => { try { return JSON.parse(s); } catch { return null; } };
+
+  // 1) As-is
+  parsed = tryParse(raw);
+
+  // 2) Repair: real newlines/CRs inside the private_key value broke the JSON.
+  //    Replace any literal newline/CR with the escaped \n sequence inside string values.
+  if (!parsed) {
+    const repaired = raw.replace(/\r\n|\r|\n/g, "\\n");
+    parsed = tryParse(repaired);
   }
+
+  // 3) Maybe the user pasted base64 of the JSON
+  if (!parsed) {
+    try {
+      const decoded = atob(raw.trim());
+      parsed = tryParse(decoded);
+    } catch { /* ignore */ }
+  }
+
+  if (!parsed) {
+    throw new Error(
+      "GOOGLE_SERVICE_ACCOUNT_JSON no es un JSON válido. Pega el contenido completo del archivo .json (incluyendo las llaves { ... }), tal cual, sin modificar.",
+    );
+  }
+
   if (!parsed.client_email || !parsed.private_key) {
     throw new Error("Service Account JSON inválido: faltan client_email o private_key");
   }
+
+  // Normalize: convert literal "\\n" sequences to real newlines in the PEM body
+  if (typeof parsed.private_key === "string" && parsed.private_key.includes("\\n")) {
+    parsed.private_key = parsed.private_key.replace(/\\n/g, "\n");
+  }
+
   return parsed as ServiceAccount;
 }
 
