@@ -109,6 +109,8 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           end_time: string
+          external_event_id: string | null
+          external_source_data: Json | null
           id: string
           last_notification_sent: Json | null
           nationality: string | null
@@ -132,6 +134,8 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           end_time: string
+          external_event_id?: string | null
+          external_source_data?: Json | null
           id?: string
           last_notification_sent?: Json | null
           nationality?: string | null
@@ -155,6 +159,8 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           end_time?: string
+          external_event_id?: string | null
+          external_source_data?: Json | null
           id?: string
           last_notification_sent?: Json | null
           nationality?: string | null
@@ -244,6 +250,42 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      google_calendar_sync_config: {
+        Row: {
+          auto_sync_enabled: boolean
+          calendar_id: string | null
+          created_at: string
+          id: string
+          last_sync_at: string | null
+          last_sync_count: number | null
+          last_sync_message: string | null
+          last_sync_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          auto_sync_enabled?: boolean
+          calendar_id?: string | null
+          created_at?: string
+          id?: string
+          last_sync_at?: string | null
+          last_sync_count?: number | null
+          last_sync_message?: string | null
+          last_sync_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          auto_sync_enabled?: boolean
+          calendar_id?: string | null
+          created_at?: string
+          id?: string
+          last_sync_at?: string | null
+          last_sync_count?: number | null
+          last_sync_message?: string | null
+          last_sync_status?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -488,7 +530,12 @@ export type Database = {
     Enums: {
       app_role: "admin" | "staff" | "administrativa"
       booking_source: "fresha" | "whatsapp" | "email" | "walk_in" | "web"
-      booking_status: "pendiente" | "confirmada" | "cancelada" | "completada"
+      booking_status:
+        | "pendiente"
+        | "confirmada"
+        | "cancelada"
+        | "completada"
+        | "pendiente_revision"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -618,7 +665,13 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "staff", "administrativa"],
       booking_source: ["fresha", "whatsapp", "email", "walk_in", "web"],
-      booking_status: ["pendiente", "confirmada", "cancelada", "completada"],
+      booking_status: [
+        "pendiente",
+        "confirmada",
+        "cancelada",
+        "completada",
+        "pendiente_revision",
+      ],
     },
   },
 } as const
