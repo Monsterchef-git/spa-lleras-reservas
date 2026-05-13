@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useFormContext, useFieldArray, useWatch } from "react-hook-form";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -32,6 +32,7 @@ import ClientHistorySummary from "@/components/ClientHistorySummary";
 import CountryCombobox from "@/components/CountryCombobox";
 import { useTherapistSchedules, useScheduleExceptions } from "@/hooks/useTherapistSchedules";
 import { resolveScheduleForDate } from "@/lib/scheduleUtils";
+import { useBookings } from "@/hooks/useBookings";
 
 function formatCOP(n: number) {
   return new Intl.NumberFormat("es-CO", {
@@ -99,6 +100,33 @@ export default function BookingFormFields({
 
   const { data: allSchedules } = useTherapistSchedules();
   const { data: allExceptions } = useScheduleExceptions();
+  const { data: allBookings } = useBookings();
+
+  const totalMinutesDraftRef = useRef(0);
+
+  /* Compute who/what is busy in the chosen time-slot (for the date) so we
+   * can decorate select options with "Ocupado HH:MM-HH:MM" + disable them. */
+  const busyMap = useMemo(() => {
+    const therapists = new Map<string, string>();
+    const resources = new Map<string, string>();
+    if (!dateWatched || !startTime || !totalMinutesDraftRef.current) {
+      return { therapists, resources };
+    }
+    const endTime = calculateEndTime(startTime, totalMinutesDraftRef.current);
+    if (!endTime) return { therapists, resources };
+    for (const b of allBookings ?? []) {
+      if (b.booking_date !== dateWatched) continue;
+      if (b.status !== "pendiente" && b.status !== "confirmada") continue;
+      const overlap = b.start_time < endTime && b.end_time > startTime;
+      if (!overlap) continue;
+      const label = `Ocupado ${b.start_time.slice(0, 5)}–${b.end_time.slice(0, 5)}`;
+      if (b.therapist_id) therapists.set(b.therapist_id, label);
+      if (b.second_therapist_id) therapists.set(b.second_therapist_id, label);
+      if (b.resource_id) resources.set(b.resource_id, label);
+    }
+    return { therapists, resources };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allBookings, dateWatched, startTime, items]);
 
   const scheduleInfo = useMemo(() => {
     if (!therapistId || !dateWatched) return null;
@@ -136,6 +164,9 @@ export default function BookingFormFields({
     return { totalMinutes: mins, totalCOP: cop, totalUSD: usd, requiresTwoTherapists: needsTwo };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, activeServices]);
+
+  // Keep the latest totalMinutes accessible to busyMap memo (avoids a circular dep).
+  totalMinutesDraftRef.current = totalMinutes;
 
   useEffect(() => {
     setValue("totalMinutes", totalMinutes, { shouldValidate: false });
@@ -639,9 +670,17 @@ export default function BookingFormFields({
                   <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {activeTherapists.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                  ))}
+                  {activeTherapists.map((t) => {
+                    const busy = busyMap.therapists.get(t.id);
+                    return (
+                      <SelectItem key={t.id} value={t.id} disabled={!!busy}>
+                        <span className="flex items-center justify-between gap-2 w-full">
+                          <span>{t.name}</span>
+                          {busy && <span className="text-[10px] text-destructive">{busy}</span>}
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -661,9 +700,17 @@ export default function BookingFormFields({
                   <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {activeResources.map((r) => (
-                    <SelectItem key={r.id} value={r.id}>{r.name} ({r.type})</SelectItem>
-                  ))}
+                  {activeResources.map((r) => {
+                    const busy = busyMap.resources.get(r.id);
+                    return (
+                      <SelectItem key={r.id} value={r.id} disabled={!!busy}>
+                        <span className="flex items-center justify-between gap-2 w-full">
+                          <span>{r.name} ({r.type})</span>
+                          {busy && <span className="text-[10px] text-destructive">{busy}</span>}
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -671,6 +718,15 @@ export default function BookingFormFields({
           )}
         />
       </div>
+
+      {requiresTwoTherapists && (
+        <div className="rounded-md border border-amber-300/60 bg-amber-50 dark:bg-amber-500/10 p-2.5 text-xs text-amber-800 dark:text-amber-200 flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>
+            Este servicio es de <strong>cuatro manos</strong> y requiere un segundo terapeuta distinto al principal.
+          </span>
+        </div>
+      )}
 
       {requiresTwoTherapists && (
         <FormField
@@ -689,7 +745,17 @@ export default function BookingFormFields({
                 <SelectContent>
                   {activeTherapists
                     .filter((t) => t.id !== therapistId)
-                    .map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                    .map((t) => {
+                      const busy = busyMap.therapists.get(t.id);
+                      return (
+                        <SelectItem key={t.id} value={t.id} disabled={!!busy}>
+                          <span className="flex items-center justify-between gap-2 w-full">
+                            <span>{t.name}</span>
+                            {busy && <span className="text-[10px] text-destructive">{busy}</span>}
+                          </span>
+                        </SelectItem>
+                      );
+                    })}
                 </SelectContent>
               </Select>
               <FormMessage />
