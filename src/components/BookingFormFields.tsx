@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useFormContext, useFieldArray, useWatch } from "react-hook-form";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -101,6 +101,8 @@ export default function BookingFormFields({
   const { data: allSchedules } = useTherapistSchedules();
   const { data: allExceptions } = useScheduleExceptions();
   const { data: allBookings } = useBookings();
+
+  const totalMinutesDraftRef = useRef(0);
 
   /* Compute who/what is busy in the chosen time-slot (for the date) so we
    * can decorate select options with "Ocupado HH:MM-HH:MM" + disable them. */
