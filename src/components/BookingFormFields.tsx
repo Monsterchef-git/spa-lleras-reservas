@@ -670,9 +670,17 @@ export default function BookingFormFields({
                   <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {activeTherapists.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                  ))}
+                  {activeTherapists.map((t) => {
+                    const busy = busyMap.therapists.get(t.id);
+                    return (
+                      <SelectItem key={t.id} value={t.id} disabled={!!busy}>
+                        <span className="flex items-center justify-between gap-2 w-full">
+                          <span>{t.name}</span>
+                          {busy && <span className="text-[10px] text-destructive">{busy}</span>}
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -692,9 +700,17 @@ export default function BookingFormFields({
                   <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {activeResources.map((r) => (
-                    <SelectItem key={r.id} value={r.id}>{r.name} ({r.type})</SelectItem>
-                  ))}
+                  {activeResources.map((r) => {
+                    const busy = busyMap.resources.get(r.id);
+                    return (
+                      <SelectItem key={r.id} value={r.id} disabled={!!busy}>
+                        <span className="flex items-center justify-between gap-2 w-full">
+                          <span>{r.name} ({r.type})</span>
+                          {busy && <span className="text-[10px] text-destructive">{busy}</span>}
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -702,6 +718,15 @@ export default function BookingFormFields({
           )}
         />
       </div>
+
+      {requiresTwoTherapists && (
+        <div className="rounded-md border border-amber-300/60 bg-amber-50 dark:bg-amber-500/10 p-2.5 text-xs text-amber-800 dark:text-amber-200 flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>
+            Este servicio es de <strong>cuatro manos</strong> y requiere un segundo terapeuta distinto al principal.
+          </span>
+        </div>
+      )}
 
       {requiresTwoTherapists && (
         <FormField
@@ -720,7 +745,17 @@ export default function BookingFormFields({
                 <SelectContent>
                   {activeTherapists
                     .filter((t) => t.id !== therapistId)
-                    .map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                    .map((t) => {
+                      const busy = busyMap.therapists.get(t.id);
+                      return (
+                        <SelectItem key={t.id} value={t.id} disabled={!!busy}>
+                          <span className="flex items-center justify-between gap-2 w-full">
+                            <span>{t.name}</span>
+                            {busy && <span className="text-[10px] text-destructive">{busy}</span>}
+                          </span>
+                        </SelectItem>
+                      );
+                    })}
                 </SelectContent>
               </Select>
               <FormMessage />
