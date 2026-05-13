@@ -41,11 +41,30 @@ export function loadServiceAccount(): ServiceAccount {
   // 1) As-is
   parsed = tryParse(raw);
 
-  // 2) Repair: real newlines/CRs inside the private_key value broke the JSON.
-  //    Replace any literal newline/CR with the escaped \n sequence inside string values.
+  // 2) Repair: real newlines inside the PEM block broke the JSON. Escape only those.
   if (!parsed) {
-    const repaired = raw.replace(/\r\n|\r|\n/g, "\\n");
+    const repaired = raw.replace(
+      /-----BEGIN PRIVATE KEY-----[\s\S]*?-----END PRIVATE KEY-----/g,
+      (block) => block.replace(/\r\n|\r|\n/g, "\\n"),
+    );
     parsed = tryParse(repaired);
+  }
+
+  // 2b) Last-resort repair: walk the string and escape unescaped newlines that fall
+  //     inside double-quoted JSON string values.
+  if (!parsed) {
+    let out = "";
+    let inString = false;
+    let escape = false;
+    for (let i = 0; i < raw.length; i++) {
+      const c = raw[i];
+      if (escape) { out += c; escape = false; continue; }
+      if (c === "\\") { out += c; escape = true; continue; }
+      if (c === '"') { inString = !inString; out += c; continue; }
+      if (inString && (c === "\n" || c === "\r")) { out += "\\n"; continue; }
+      out += c;
+    }
+    parsed = tryParse(out);
   }
 
   // 3) Maybe the user pasted base64 of the JSON
