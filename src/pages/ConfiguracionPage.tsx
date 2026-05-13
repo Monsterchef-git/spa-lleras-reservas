@@ -80,15 +80,6 @@ const DEFAULT_CONFIG: SpaConfig = {
 
 const INTEGRATION_META = [
   {
-    key: "gcal", name: "Google Calendar", icon: Calendar, comingSoon: true,
-    description: "Sincronización bidireccional de reservas con Google Calendar.",
-    modalDescription: "Conecta tu cuenta de Google Calendar para sincronizar reservas automáticamente. Necesitas crear un proyecto en Google Cloud Console y habilitar la Calendar API.",
-    fields: [
-      { key: "calendarId", label: "Calendar ID", placeholder: "ejemplo@group.calendar.google.com", hint: "ID del calendario donde se crearán los eventos", type: "text" },
-      { key: "apiKey", label: "API Key", placeholder: "AIzaSy...", hint: "Clave de API de Google Cloud Console", type: "password" },
-    ],
-  },
-  {
     key: "whatsapp", name: "WhatsApp Business API", icon: MessageSquare, comingSoon: true,
     description: "Webhook vía Make.com para parsear mensajes y crear reservas.",
     modalDescription: "Configura la integración con WhatsApp Business API para recibir y responder mensajes de reservas automáticamente a través de Make.com o n8n.",
