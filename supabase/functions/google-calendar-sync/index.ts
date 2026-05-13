@@ -50,12 +50,10 @@ Deno.serve(async (req) => {
     const sa = loadServiceAccount();
     const token = await getGoogleAccessToken(sa);
 
-    // Time window: from last sync (-1h overlap) and looking ahead 90 days
+    // Time window: 30 days back, 180 days forward (by event start time)
     const now = new Date();
-    const updatedMin = cfgRow.last_sync_at
-      ? new Date(new Date(cfgRow.last_sync_at).getTime() - 60 * 60 * 1000).toISOString()
-      : new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
-    const timeMax = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString();
+    const timeMin = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const timeMax = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000).toISOString();
 
     // Fetch all event pages
     const events: any[] = [];
@@ -66,10 +64,10 @@ Deno.serve(async (req) => {
       );
       url.searchParams.set("singleEvents", "true");
       url.searchParams.set("showDeleted", "true");
-      url.searchParams.set("updatedMin", updatedMin);
+      url.searchParams.set("timeMin", timeMin);
       url.searchParams.set("timeMax", timeMax);
       url.searchParams.set("maxResults", "250");
-      url.searchParams.set("orderBy", "updated");
+      url.searchParams.set("orderBy", "startTime");
       if (pageToken) url.searchParams.set("pageToken", pageToken);
 
       const resp = await fetch(url.toString(), {
