@@ -431,6 +431,8 @@ export default function ConfiguracionPage() {
         </Card>
         )}
 
+        {canManageSync && <GoogleCalendarSyncCard />}
+
         {/* Bottom Save */}
         <div className="flex justify-end gap-2 pb-8">
           <Button variant="outline" onClick={resetDefaults}>
