@@ -75,6 +75,7 @@ Deno.serve(async (req) => {
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(`Google Calendar error: ${JSON.stringify(data)}`);
+      console.log(`[sync] page fetched: items=${(data.items ?? []).length} url=${url.toString()}`);
       events.push(...(data.items ?? []));
       pageToken = data.nextPageToken;
     } while (pageToken);
