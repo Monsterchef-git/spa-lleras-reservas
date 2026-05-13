@@ -19,6 +19,7 @@ import { BookingImportDialog } from "@/components/BookingImportDialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { GoogleCalendarSyncCard } from "@/components/GoogleCalendarSyncCard";
 
 const STORAGE_KEY = "spa_lleras_config";
 
@@ -134,6 +135,7 @@ export default function ConfiguracionPage() {
   const [importOpen, setImportOpen] = useState(false);
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
+  const canManageSync = user?.role === "admin" || user?.role === "administrativa";
 
   const update = <K extends keyof SpaConfig>(key: K, value: SpaConfig[K]) => {
     setConfig((prev) => ({ ...prev, [key]: value }));
