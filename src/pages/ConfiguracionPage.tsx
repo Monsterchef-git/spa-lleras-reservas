@@ -19,6 +19,7 @@ import { BookingImportDialog } from "@/components/BookingImportDialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { GoogleCalendarSyncCard } from "@/components/GoogleCalendarSyncCard";
 
 const STORAGE_KEY = "spa_lleras_config";
 
@@ -79,15 +80,6 @@ const DEFAULT_CONFIG: SpaConfig = {
 
 const INTEGRATION_META = [
   {
-    key: "gcal", name: "Google Calendar", icon: Calendar, comingSoon: true,
-    description: "Sincronización bidireccional de reservas con Google Calendar.",
-    modalDescription: "Conecta tu cuenta de Google Calendar para sincronizar reservas automáticamente. Necesitas crear un proyecto en Google Cloud Console y habilitar la Calendar API.",
-    fields: [
-      { key: "calendarId", label: "Calendar ID", placeholder: "ejemplo@group.calendar.google.com", hint: "ID del calendario donde se crearán los eventos", type: "text" },
-      { key: "apiKey", label: "API Key", placeholder: "AIzaSy...", hint: "Clave de API de Google Cloud Console", type: "password" },
-    ],
-  },
-  {
     key: "whatsapp", name: "WhatsApp Business API", icon: MessageSquare, comingSoon: true,
     description: "Webhook vía Make.com para parsear mensajes y crear reservas.",
     modalDescription: "Configura la integración con WhatsApp Business API para recibir y responder mensajes de reservas automáticamente a través de Make.com o n8n.",
@@ -134,6 +126,7 @@ export default function ConfiguracionPage() {
   const [importOpen, setImportOpen] = useState(false);
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
+  const canManageSync = user?.role === "admin" || user?.role === "administrativa";
 
   const update = <K extends keyof SpaConfig>(key: K, value: SpaConfig[K]) => {
     setConfig((prev) => ({ ...prev, [key]: value }));
@@ -428,6 +421,8 @@ export default function ConfiguracionPage() {
           </CardContent>
         </Card>
         )}
+
+        {canManageSync && <GoogleCalendarSyncCard />}
 
         {/* Bottom Save */}
         <div className="flex justify-end gap-2 pb-8">
