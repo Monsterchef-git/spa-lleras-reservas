@@ -17,6 +17,8 @@ import { useBookings, type Booking } from "@/hooks/useBookings";
 import { useTherapists, type Therapist } from "@/hooks/useTherapists";
 import { useResources, type Resource } from "@/hooks/useResources";
 import BookingFormDialog from "@/components/BookingFormDialog";
+import { useTherapistSchedules, useScheduleExceptions } from "@/hooks/useTherapistSchedules";
+import { resolveScheduleForDate } from "@/lib/scheduleUtils";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Helpers (pure, time-string based — keeps it cheap and avoids tz bugs)
@@ -112,6 +114,8 @@ export default function AvailabilityWidget() {
   const { data: bookings } = useBookings();
   const { data: therapists } = useTherapists();
   const { data: resources } = useResources();
+  const { data: allSchedules } = useTherapistSchedules();
+  const { data: allExceptions } = useScheduleExceptions();
 
   const [filter, setFilter] = useState<Filter>("next4");
 
@@ -132,6 +136,21 @@ export default function AvailabilityWidget() {
 
   const date = todayStr();
   const now = nowMinutes();
+
+  /* Per-therapist resolved schedule for TODAY. */
+  const therapistSchedule = useMemo(() => {
+    const map = new Map<string, { isWorking: boolean; startMin: number; endMin: number; hasConfig: boolean }>();
+    for (const t of therapists ?? []) {
+      const r = resolveScheduleForDate(allSchedules, allExceptions, t.id, date);
+      map.set(t.id, {
+        isWorking: r.isWorking,
+        startMin: r.startTime ? toMin(r.startTime) : DAY_OPEN,
+        endMin: r.endTime ? toMin(r.endTime) : DAY_CLOSE,
+        hasConfig: r.hasConfig,
+      });
+    }
+    return map;
+  }, [therapists, allSchedules, allExceptions, date]);
 
   /* Today's active bookings only (pendiente / confirmada). */
   const activeToday: Booking[] = useMemo(() => {
@@ -189,14 +208,16 @@ export default function AvailabilityWidget() {
           nextFree = now;
           (void upcoming);
         }
+        const sched = therapistSchedule.get(t.id);
         return {
           therapist: t,
           isBusy: !!current,
           freeAt: current ? current.end : now,
           nextBusyStart: busy.find((b) => b.start > now)?.start ?? DAY_CLOSE,
+          schedule: sched,
         };
       });
-  }, [therapists, therapistBusy, now]);
+  }, [therapists, therapistBusy, now, therapistSchedule]);
 
   /* ── Section 2: Resource status ────────────────────────────────── */
   const resourceStatus = useMemo(() => {
@@ -231,7 +252,13 @@ export default function AvailabilityWidget() {
     /* For every therapist × resource, compute intersection of free gaps. */
     const found: SlotSuggestion[] = [];
     for (const t of activeTherapists) {
-      const tGaps = freeGaps(horizonStart, horizonEnd, therapistBusy.get(t.id) ?? []);
+      const sched = therapistSchedule.get(t.id);
+      // Skip therapists who are off today
+      if (sched && sched.hasConfig && !sched.isWorking) continue;
+      const tStart = Math.max(horizonStart, sched?.startMin ?? DAY_OPEN);
+      const tEnd = Math.min(horizonEnd, sched?.endMin ?? DAY_CLOSE);
+      if (tStart >= tEnd) continue;
+      const tGaps = freeGaps(tStart, tEnd, therapistBusy.get(t.id) ?? []);
       for (const r of activeResources) {
         const rGaps = freeGaps(horizonStart, horizonEnd, resourceBusy.get(r.id) ?? []);
         // intersect tGaps with rGaps
@@ -271,7 +298,7 @@ export default function AvailabilityWidget() {
       });
 
     return unique.slice(0, 8);
-  }, [therapists, resources, therapistBusy, resourceBusy, filter, now]);
+  }, [therapists, resources, therapistBusy, resourceBusy, filter, now, therapistSchedule]);
 
   const handleSlotClick = (s: SlotSuggestion) => {
     setPre({
