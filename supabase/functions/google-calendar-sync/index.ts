@@ -68,6 +68,7 @@ Deno.serve(async (req) => {
       url.searchParams.set("timeMax", timeMax);
       url.searchParams.set("maxResults", "250");
       url.searchParams.set("orderBy", "startTime");
+      url.searchParams.set("timeZone", "America/Bogota");
       if (pageToken) url.searchParams.set("pageToken", pageToken);
 
       const resp = await fetch(url.toString(), {
@@ -119,6 +120,9 @@ Deno.serve(async (req) => {
         let endDt = new Date(ev.end.dateTime);
         const bookingDate = formatDateInTZ(startDt);
         const startTime = formatTimeInTZ(startDt);
+        console.log(
+          `[sync] event seen: id=${eventId} status=${ev.status ?? "unknown"} rawStart=${ev.start.dateTime} rawEnd=${ev.end.dateTime} parsedDate=${bookingDate} parsedTime=${startTime}`,
+        );
         // If end <= start (zero-duration or malformed Google event), default to +60min
         if (endDt.getTime() <= startDt.getTime()) {
           console.log(`[sync] event ${ev.id}: end<=start, defaulting end to start+60min`);
@@ -237,7 +241,7 @@ Deno.serve(async (req) => {
     const total = created + updated + cancelled;
     const status = errors.length === 0 ? "ok" : (total > 0 ? "ok" : "error");
     const message = errors.length === 0
-      ? `OK — ${created} creadas, ${updated} actualizadas, ${cancelled} canceladas, ${conflicts} con conflicto, ${skippedPast + skippedWithoutTime} omitidas`
+      ? `OK — Google devolvió ${events.length} evento(s): ${created} creadas, ${updated} actualizadas, ${cancelled} canceladas, ${conflicts} con conflicto, ${skippedPast + skippedWithoutTime} omitidas (${skippedPast} pasadas, ${skippedWithoutTime} sin hora)`
       : `Parcial — ${errors.length} errores. Primer error: ${errors[0]}`;
 
     await admin.from("google_calendar_sync_config").update({
