@@ -50,6 +50,26 @@ Deno.serve(async (req) => {
     const sa = loadServiceAccount();
     const token = await getGoogleAccessToken(sa);
 
+    // --- Diagnostic: verify the service account can actually see this calendar
+    let accessRole: string | null = null;
+    let calendarVisible = false;
+    let calendarListError: string | null = null;
+    try {
+      const clResp = await fetch(
+         `https://www.googleapis.com/calendar/v3/users/me/calendarList/${encodeURIComponent(calendarId)}`,
+         { headers: { Authorization: `Bearer ${token}` } },
+      );
+      const clData = await clResp.json();
+      if (clResp.ok) {
+        calendarVisible = true;
+        accessRole = clData.accessRole ?? null;
+      } else {
+        calendarListError = `${clResp.status}: ${clData?.error?.message ?? JSON.stringify(clData)}`;
+      }
+    } catch (e) {
+      calendarListError = e instanceof Error ? e.message : String(e);
+    }
+
     // Time window: 30 days back, 180 days forward (by event start time)
     const now = new Date();
     const timeMin = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -80,6 +100,17 @@ Deno.serve(async (req) => {
       events.push(...(data.items ?? []));
       pageToken = data.nextPageToken;
     } while (pageToken);
+
+    // Build event-level diagnostic snapshot (first 30 events, ordered by start)
+    const eventsSnapshot = events.slice(0, 30).map((e) => ({
+      id: e.id,
+      status: e.status ?? null,
+      summary: e.summary ?? null,
+      start: e.start?.dateTime ?? e.start?.date ?? null,
+      end: e.end?.dateTime ?? e.end?.date ?? null,
+    }));
+    const todayBogotaStr = formatDateInTZ(new Date());
+    const eventsToday = eventsSnapshot.filter((e) => (e.start ?? "").startsWith(todayBogotaStr));
 
     // Preload reference data for matching
     const [{ data: therapists }, { data: services }, { data: clients }] = await Promise.all([
@@ -240,18 +271,59 @@ Deno.serve(async (req) => {
 
     const total = created + updated + cancelled;
     const status = errors.length === 0 ? "ok" : (total > 0 ? "ok" : "error");
-    const message = errors.length === 0
-      ? `OK — Google devolvió ${events.length} evento(s): ${created} creadas, ${updated} actualizadas, ${cancelled} canceladas, ${conflicts} con conflicto, ${skippedPast + skippedWithoutTime} omitidas (${skippedPast} pasadas, ${skippedWithoutTime} sin hora)`
-      : `Parcial — ${errors.length} errores. Primer error: ${errors[0]}`;
+    let message: string;
+    if (errors.length > 0) {
+      message = `Parcial — ${errors.length} errores. Primer error: ${errors[0]}`;
+    } else {
+      message = `OK — Google devolvió ${events.length} evento(s): ${created} creadas, ${updated} actualizadas, ${cancelled} canceladas, ${conflicts} con conflicto, ${skippedPast + skippedWithoutTime} omitidas (${skippedPast} pasadas, ${skippedWithoutTime} sin hora)`;
+    }
+    // Append diagnostic context so the UI can show it
+    const diagLines: string[] = [];
+    diagLines.push(`Calendar ID: ${calendarId}`);
+    diagLines.push(`Service Account: ${sa.client_email}`);
+    if (calendarVisible) {
+      diagLines.push(`✓ Calendario visible para el Service Account (accessRole=${accessRole ?? "?"})`);
+      if (accessRole === "freeBusyReader") {
+        diagLines.push(`⚠ Permiso insuficiente: "Solo libre/ocupado". Cámbialo a "Ver todos los detalles del evento" en Google Calendar → Configuración → Compartir con personas y grupos.`);
+      }
+    } else {
+      diagLines.push(`✗ El calendario NO es visible para el Service Account. Causa más probable: NO está compartido con ${sa.client_email}. (Detalle: ${calendarListError ?? "sin detalles"})`);
+    }
+    diagLines.push(`Hoy (Bogotá): ${todayBogotaStr} — Eventos para hoy en la respuesta de Google: ${eventsToday.length}`);
+    if (eventsSnapshot.length > 0) {
+      diagLines.push(`Eventos devueltos por Google (máx. 30):`);
+      for (const e of eventsSnapshot) {
+        diagLines.push(`  • ${e.start ?? "?"} → ${e.end ?? "?"} | ${e.status ?? "?"} | ${e.summary ?? "(sin título)"} [${e.id}]`);
+      }
+    } else {
+      diagLines.push(`Google no devolvió ningún evento en la ventana ${timeMin} → ${timeMax}.`);
+    }
+    const diagnosticText = diagLines.join("\n");
+    const fullMessage = `${message}\n\n— Diagnóstico —\n${diagnosticText}`;
 
     await admin.from("google_calendar_sync_config").update({
       last_sync_at: new Date().toISOString(),
       last_sync_status: status,
-      last_sync_message: message,
+      last_sync_message: fullMessage,
       last_sync_count: total,
     }).eq("id", cfgRow.id);
 
-    return json({ ok: true, fetched: events.length, created, updated, cancelled, conflicts, skippedPast, skippedWithoutTime, errors });
+    return json({
+      ok: true,
+      fetched: events.length,
+      created, updated, cancelled, conflicts, skippedPast, skippedWithoutTime, errors,
+      diagnostic: {
+        calendarId,
+        serviceAccount: sa.client_email,
+        calendarVisible,
+        accessRole,
+        calendarListError,
+        todayBogota: todayBogotaStr,
+        eventsTodayCount: eventsToday.length,
+        timeMin, timeMax,
+        events: eventsSnapshot,
+      },
+    });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     try {
