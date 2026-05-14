@@ -43,6 +43,7 @@ export function GoogleCalendarSyncCard() {
   const [testing, setTesting] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [showDiagnostic, setShowDiagnostic] = useState(false);
 
   const load = async () => {
     const { data, error } = await supabase
@@ -119,8 +120,10 @@ export function GoogleCalendarSyncCard() {
         toast.success(
           `Sincronización OK — ${data.created ?? 0} nuevas, ${data.updated ?? 0} actualizadas, ${data.cancelled ?? 0} canceladas${data.conflicts ? `, ${data.conflicts} con conflicto` : ""}`,
         );
+        if (data.diagnostic) setShowDiagnostic(true);
       } else {
         toast.error("Error en sincronización: " + (data?.error ?? "desconocido"));
+        setShowDiagnostic(true);
       }
       await load();
     } catch (e) {
@@ -237,7 +240,20 @@ export function GoogleCalendarSyncCard() {
         </div>
 
         {cfg?.last_sync_message && (
-          <p className="text-xs text-muted-foreground italic">{cfg.last_sync_message}</p>
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => setShowDiagnostic((s) => !s)}
+              className="text-xs underline text-muted-foreground hover:text-foreground"
+            >
+              {showDiagnostic ? "Ocultar" : "Ver"} diagnóstico detallado
+            </button>
+            {showDiagnostic && (
+              <pre className="text-[11px] bg-muted/50 border border-border/50 rounded-lg p-3 whitespace-pre-wrap break-all max-h-96 overflow-auto font-mono">
+                {cfg.last_sync_message}
+              </pre>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>
