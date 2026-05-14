@@ -116,9 +116,14 @@ Deno.serve(async (req) => {
         }
 
         const startDt = new Date(ev.start.dateTime);
-        const endDt = new Date(ev.end.dateTime);
+        let endDt = new Date(ev.end.dateTime);
         const bookingDate = formatDateInTZ(startDt);
         const startTime = formatTimeInTZ(startDt);
+        // If end <= start (zero-duration or malformed Google event), default to +60min
+        if (endDt.getTime() <= startDt.getTime()) {
+          console.log(`[sync] event ${ev.id}: end<=start, defaulting end to start+60min`);
+          endDt = new Date(startDt.getTime() + 60 * 60 * 1000);
+        }
         const endTime = formatTimeInTZ(endDt);
 
         // Skip past events — bookings table rejects past dates by design
