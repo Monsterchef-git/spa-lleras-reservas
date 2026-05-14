@@ -51,11 +51,38 @@ Deno.serve(async (req) => {
       }, 200);
     }
 
+    // Read events from the last 7 days through the next 7 days
+    const now = new Date();
+    const timeMin = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const timeMax = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const eventsUrl =
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events` +
+      `?singleEvents=true&showDeleted=false&orderBy=startTime` +
+      `&timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}` +
+      `&timeZone=America%2FBogota&maxResults=250`;
+    const evResp = await fetch(eventsUrl, { headers: { Authorization: `Bearer ${token}` } });
+    const evData = await evResp.json();
+    const events = evResp.ok && Array.isArray(evData.items)
+      ? evData.items.map((e: any) => ({
+          id: e.id,
+          status: e.status,
+          summary: e.summary ?? null,
+          start: e.start?.dateTime ?? e.start?.date ?? null,
+          end: e.end?.dateTime ?? e.end?.date ?? null,
+          creator: e.creator?.email ?? null,
+          organizer: e.organizer?.email ?? null,
+        }))
+      : [];
+
     return json({
       ok: true,
       calendarName: data.summary,
       timeZone: data.timeZone,
       client_email: sa.client_email,
+      eventsWindow: { timeMin, timeMax },
+      eventsCount: events.length,
+      eventsError: evResp.ok ? null : (evData?.error?.message || `HTTP ${evResp.status}`),
+      events,
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
