@@ -24,6 +24,8 @@ Deno.serve(async (req) => {
   const authHeader = req.headers.get("Authorization");
   const isManual = !!authHeader?.startsWith("Bearer ");
 
+  const cycleStartedAt = Date.now();
+
   try {
     const { data: cfgRow, error: cfgErr } = await admin
       .from("google_calendar_sync_config")
@@ -308,6 +310,23 @@ Deno.serve(async (req) => {
       last_sync_count: total,
     }).eq("id", cfgRow.id);
 
+    // Log this sync cycle
+    const logStatus: "success" | "empty" | "error" =
+      errors.length > 0 && total === 0
+        ? "error"
+        : events.length === 0
+        ? "empty"
+        : "success";
+    await admin.from("sync_log").insert({
+      events_fetched: events.length,
+      events_imported: created + updated,
+      events_skipped: skippedPast + skippedWithoutTime,
+      conflicts_detected: conflicts,
+      status: logStatus,
+      error_message: errors.length > 0 ? errors.join(" | ").slice(0, 2000) : null,
+      duration_ms: Date.now() - cycleStartedAt,
+    });
+
     return json({
       ok: true,
       fetched: events.length,
@@ -336,6 +355,17 @@ Deno.serve(async (req) => {
           last_sync_message: msg,
         }).eq("id", cfg.id);
       }
+    } catch (_) { /* ignore */ }
+    try {
+      await admin.from("sync_log").insert({
+        events_fetched: 0,
+        events_imported: 0,
+        events_skipped: 0,
+        conflicts_detected: 0,
+        status: "error",
+        error_message: msg.slice(0, 2000),
+        duration_ms: Date.now() - cycleStartedAt,
+      });
     } catch (_) { /* ignore */ }
     return json({ ok: false, error: msg }, 200);
   }
