@@ -387,6 +387,42 @@ export type Database = {
         }
         Relationships: []
       }
+      sync_log: {
+        Row: {
+          conflicts_detected: number
+          created_at: string
+          duration_ms: number
+          error_message: string | null
+          events_fetched: number
+          events_imported: number
+          events_skipped: number
+          id: string
+          status: string
+        }
+        Insert: {
+          conflicts_detected?: number
+          created_at?: string
+          duration_ms?: number
+          error_message?: string | null
+          events_fetched?: number
+          events_imported?: number
+          events_skipped?: number
+          id?: string
+          status: string
+        }
+        Update: {
+          conflicts_detected?: number
+          created_at?: string
+          duration_ms?: number
+          error_message?: string | null
+          events_fetched?: number
+          events_imported?: number
+          events_skipped?: number
+          id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       therapist_schedule_exceptions: {
         Row: {
           created_at: string
