@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import DashboardPage from "./pages/DashboardPage";
+import HoyPage from "./pages/HoyPage";
 import ReservasPage from "./pages/ReservasPage";
 import ServiciosPage from "./pages/ServiciosPage";
 import TerapeutasPage from "./pages/TerapeutasPage";
@@ -18,8 +19,15 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import UsersAdminPage from "./pages/UsersAdminPage";
 import HorariosPage from "./pages/HorariosPage";
 import NotFound from "./pages/NotFound";
+import { useAuth } from "@/hooks/useAuth";
 
 const queryClient = new QueryClient();
+
+function HomeRoute() {
+  const { user } = useAuth();
+  if (user?.role === "staff") return <HoyPage />;
+  return <DashboardPage />;
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -32,7 +40,8 @@ const App = () => (
             <Route path="/login" element={<LoginPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+            <Route path="/" element={<ProtectedRoute><HomeRoute /></ProtectedRoute>} />
+            <Route path="/hoy" element={<ProtectedRoute><HoyPage /></ProtectedRoute>} />
             <Route path="/reservas" element={<ProtectedRoute><ReservasPage /></ProtectedRoute>} />
             <Route path="/servicios" element={<ProtectedRoute requireRole="admin"><ServiciosPage /></ProtectedRoute>} />
             <Route path="/terapeutas" element={<ProtectedRoute requireRole="admin"><TerapeutasPage /></ProtectedRoute>} />
