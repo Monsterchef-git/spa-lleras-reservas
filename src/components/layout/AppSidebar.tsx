@@ -30,7 +30,8 @@ type NavItem = {
 };
 
 const ALL_NAV_ITEMS: NavItem[] = [
-  { to: "/", icon: LayoutDashboard, label: "Dashboard", roles: ["admin", "administrativa", "staff"] },
+  { to: "/", icon: LayoutDashboard, label: "Dashboard", roles: ["admin", "administrativa"] },
+  { to: "/", icon: CalendarDays, label: "Hoy", roles: ["staff"] },
   { to: "/reservas", icon: CalendarDays, label: "Reservas", roles: ["admin", "administrativa", "staff"] },
   { to: "/servicios", icon: Sparkles, label: "Servicios", roles: ["admin"] },
   { to: "/terapeutas", icon: Users, label: "Terapeutas", roles: ["admin"] },
